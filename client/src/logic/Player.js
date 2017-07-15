@@ -51,7 +51,7 @@ var Player = function(id, name, race){
         // firstly deselect currently selected object
         self.deselectObject();
 
-        if(obj && obj.playerInControl === this){
+        if(obj){
             obj.isSelected = true;
             self.selectedObject = obj;
 
@@ -64,12 +64,15 @@ var Player = function(id, name, race){
         var sObj = self.selectedObject;
         if(sObj.canAttack()){
             sObj.actions.attack(sObj, obj);
+            self.deselectObject();
         }
         else{
             console.log("Can't attack");
             // Print this to UI instead
+            // ? print reasons (has already acted this turn, has no attack, special conditions)
+
+            self.selectObject(obj); // ? maybe not needed
         }
-        self.deselectObject();
     }
 
     // handle mouse clicks on the battlefield
@@ -82,8 +85,10 @@ var Player = function(id, name, race){
 
             // if own structure or unit is selected (REDO the if/else probably)
             case ModeEnum.OBJECT_SELECTED:
-                // if there is no object - deselect, if clicked on own object - reselect
-                if(!obj || obj.playerInControl === this){
+                // if there is no object - deselect, if clicked on own object or it's not Player's turn - reselect
+                // Also, if currently selected object is not your object, don't attack either
+                // TODO should also check if ally or enemy (if ally - select, enemy - attack)
+                if(!obj || obj.playerInControl === this || !self.hasTurn || self.selectedObject.playerInControl !== this){
                     self.selectObject(obj);
                 }
                 else{
@@ -120,20 +125,23 @@ var Player = function(id, name, race){
 
         // if an object is selected
         if(mode === ModeEnum.OBJECT_SELECTED){
-            // draw portrait, stats and active buttons
+            // draw portrait, stats
 
-            // add object available actions
-            for(var act in obj.actions){
+            // draw active buttons if Player is in turn and the object belongs to Player
+            if(self.hasTurn && obj.playerInControl === self){
+                // add object available actions
+                for(var act in obj.actions){
 
-                if(act !== 'attack')
-                    objData.buttonDataList.push({
-                        panel: 'bottom',
-                        name: act,
-                        clickFunction: function(){
-                            obj.actions[act](obj);
-                        }
-                    });
-            };
+                    if(act !== 'attack')
+                        objData.buttonDataList.push({
+                            panel: 'bottom',
+                            name: act,
+                            clickFunction: function(){
+                                obj.actions[act](obj);
+                            }
+                        });
+                };
+            }
 
         }
         // if an object is being placed or if an ability is targeted

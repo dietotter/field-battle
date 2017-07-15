@@ -405,7 +405,7 @@ var Player = function(id, name, race){
         // firstly deselect currently selected object
         self.deselectObject();
 
-        if(obj && obj.playerInControl === this){
+        if(obj){
             obj.isSelected = true;
             self.selectedObject = obj;
 
@@ -418,12 +418,15 @@ var Player = function(id, name, race){
         var sObj = self.selectedObject;
         if(sObj.canAttack()){
             sObj.actions.attack(sObj, obj);
+            self.deselectObject();
         }
         else{
             console.log("Can't attack");
             // Print this to UI instead
+            // ? print reasons (has already acted this turn, has no attack, special conditions)
+
+            self.selectObject(obj); // ? maybe not needed
         }
-        self.deselectObject();
     }
 
     // handle mouse clicks on the battlefield
@@ -436,8 +439,10 @@ var Player = function(id, name, race){
 
             // if own structure or unit is selected (REDO the if/else probably)
             case ModeEnum.OBJECT_SELECTED:
-                // if there is no object - deselect, if clicked on own object - reselect
-                if(!obj || obj.playerInControl === this){
+                // if there is no object - deselect, if clicked on own object or it's not Player's turn - reselect
+                // Also, if currently selected object is not your object, don't attack either
+                // TODO should also check if ally or enemy (if ally - select, enemy - attack)
+                if(!obj || obj.playerInControl === this || !self.hasTurn || self.selectedObject.playerInControl !== this){
                     self.selectObject(obj);
                 }
                 else{
@@ -474,20 +479,23 @@ var Player = function(id, name, race){
 
         // if an object is selected
         if(mode === ModeEnum.OBJECT_SELECTED){
-            // draw portrait, stats and active buttons
+            // draw portrait, stats
 
-            // add object available actions
-            for(var act in obj.actions){
+            // draw active buttons if Player is in turn and the object belongs to Player
+            if(self.hasTurn && obj.playerInControl === self){
+                // add object available actions
+                for(var act in obj.actions){
 
-                if(act !== 'attack')
-                    objData.buttonDataList.push({
-                        panel: 'bottom',
-                        name: act,
-                        clickFunction: function(){
-                            obj.actions[act](obj);
-                        }
-                    });
-            };
+                    if(act !== 'attack')
+                        objData.buttonDataList.push({
+                            panel: 'bottom',
+                            name: act,
+                            clickFunction: function(){
+                                obj.actions[act](obj);
+                            }
+                        });
+                };
+            }
 
         }
         // if an object is being placed or if an ability is targeted
@@ -718,10 +726,10 @@ setInterval(update, 1000/25); // 25 frames per second => update every 40 ms
 * DONE (9.7.2017) 2. If player selects own unit, that can attack, and then clicks enemy unit, attack action is triggered
 * DONE (10.7.2017) 3. When object's hp becomes <= 0, remove it from battlefield and from unit list
 * KINDA DONE (needs the design + change some functions when object creation is implemented) (11.7.2017) 4. Simple user interface (Buttons on active panel change depending on player mode and selected object)
-* 4.5. Add tooltips to buttons if hovered (at least button name should be displayed, as buttons will most likely have icons instead of actual text)
-* 4.7. When selecting ally (not own) unit/structure, don't show action buttons, but just unit's portrait and stats.
+* DONE (13.7.2017) 4.5. Add tooltips to buttons if hovered (at least button name should be displayed, as buttons will most likely have icons instead of actual text)
+* DONE (15.7.2017) 4.7. When selecting ally (not own) unit/structure, don't show action buttons, but just unit's portrait and stats.
 *   This also applies to selecting enemy units/structures during Default player mode (when nothing own is selected).
-*   Basically, I just need a new player mode (e.g. ModeEnum.NOT_OWN_SELECTED) and handle it properly.
+*   Also this should apply to all units/structures when its not Player's turn.
 * 5. Implement turns
 * 6. Implement object creation (without using the grid, player can create object wherever he wants on his side of the battlefield)
 * 7. Add game object property 'hasAction', which indicates whether or not object can act this turn (all of player's objects need
@@ -732,13 +740,20 @@ setInterval(update, 1000/25); // 25 frames per second => update every 40 ms
 *   Show current amount of each player's money on the top of the canvas.
 *
 * TODO Not order-specifield goals:
+* DONE (15.7.2017) ???. Create github repo
 * ???. Add an update method to entities and call it every frame --- This actually needs to be done soon (when the first necessity occurs)
-* ???. Create github repo
 * ???. Finish player mode processing
 * ???. Show selected object's portrait and hp in bottom UI panel
+* ???. Change Player.js exports (module.exports = Player ===> exports.Player = Player; exports.ModeEnum = ModeEnum)
+* ???. Rework object selection and object selection drawing, as there may be multiple players, who will select the same object. (? this is for multiplayer)
 *
 * TODO Long-term goals
 * ???. Make game multiplayer (add back-end). Use socket.io
+*
+* TODO Problems
+* SOLVED (15.7.2017) 1. If enemy unit is selected, it can attack itself
+* 2. 'onclick' of UI buttons loads slowly (maybe should handle it in another way, not adding onclick every time we select an object.
+*   E.g. We could append all onclicks when the page loads and never append it on selecting object (https://stackoverflow.com/questions/17664154/jquery-directly-at-onclick-and-effect-ui-slow))
 * */
 },{"./drawer":2,"./game":3}],10:[function(require,module,exports){
 /**

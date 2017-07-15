@@ -6,5 +6,7 @@ tutorials
 tutorials/*
 
 # Webstorm files
-.idea
+.idea/
 .idea/*
+
+# git rm --cached -r .idea (command to remove from repo without removing from disk)
