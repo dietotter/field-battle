@@ -4,3 +4,6 @@ node_modules
 # Not project-related media
 tutorials
 tutorials/*
+
+# Webstorm files
+.idea
