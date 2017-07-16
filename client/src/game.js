@@ -9,18 +9,21 @@ var players = {};
 
 var playerInTurn;
 
+// TODO should take players as parameters
 exports.initializeGame = function(){
 
     players.player1 = Player(0, 'Nick', 'human');
     players.player2 = Player(1, 'Kek', 'human');
 
-    changePlayerInTurn(players.player1);
     players.player1.addObject('houseHum', {id: 0, x: 0, y: 0});
     players.player2.addObject('houseHum', {id: 100, x: Constants.FIELD_WIDTH*9/10, y: 0});
 
     // FOR DEBUGGING
     players.player1.gameObjects[0].hp = 17;
 
+    ui.initialize();
+
+    changePlayerInTurn(players.player1);
     console.log(players);
 }
 
@@ -31,27 +34,6 @@ $('#ctx').click(function (e) {
     console.log(mousePos.x, mousePos.y);
 
     var selectedObj = getObjectByCoordinates(mousePos.x, mousePos.y);
-
-    // ================== DEBUG START ==================
-   /* if(!selectedObj){
-        ui.addButton({
-            panel: 'top',
-            name: 'test',
-            clickFunction: function () {
-                players.player1.addObject('archery', {id: 1, x: Constants.FIELD_WIDTH/10, y: Constants.FIELD_HEIGHT*2/10});
-            },
-            bottomText: 'Make archery for cool dude'
-        });
-
-        ui.addButton({
-            panel: 'bottom',
-            name: 'try',
-            clickFunction: function () {
-                players.player2.addObject('archery', {id: 101, x: Constants.FIELD_WIDTH*8/10, y: Constants.FIELD_HEIGHT*4/10});
-            }
-        });
-    }*/
-    // ================== DEBUG END ==================
 
     playerInTurn.clickHandle(selectedObj);
     if(selectedObj)
@@ -88,13 +70,38 @@ var getMousePos = function (e) {
     }
 }
 
+// make argument 'player' the new player-in-turn
 var changePlayerInTurn = function (player) {
     if(playerInTurn){
         playerInTurn.hasTurn = false;
+
+        // deselects selected object and cleans the UI
+        playerInTurn.endTurn();
     }
 
     player.hasTurn = true;
     playerInTurn = player;
 }
 
-// ?? in single player need to deselect selected object when player ends the turn (though this should not be the case in multiplayer)
+// check who's in turn and give the turn to the next player
+var changeTurn = function () {
+    var plArray = Object.values(players);
+
+    for(var i = 0; i < plArray.length; i++){
+        if(plArray[i] === playerInTurn){
+            if(++i >= plArray.length){
+                i = 0;
+            }
+
+            changePlayerInTurn(plArray[i]);
+        }
+    }
+}
+
+// return current player in turn
+getPlayerInTurn = function () {
+    return playerInTurn;
+}
+
+exports.getPlayerInTurn = getPlayerInTurn;
+exports.changeTurn = changeTurn;

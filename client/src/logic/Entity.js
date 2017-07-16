@@ -136,20 +136,14 @@ var build = function (self) {
     for(var obj in objList){
         objData.buttonDataList.push({
             panel: 'bottom',
-            name: objList[obj],
-            /*SHOULD BE CHANGED*/clickFunction: function(){
-                self.playerInControl.addObject(objList[obj], {id: ++counter, x: counter*Constants.FIELD_WIDTH/10, y: 0});
-            }
+            name: objList[obj]
         });
     }
 
     // add 'cancel' button
     objData.buttonDataList.push({
         panel: 'bottom',
-        name: 'cancel',
-        clickFunction: function(){
-            self.playerInControl.updateUI(1, self);
-        }
+        name: 'cancel'
     });
 
     ui.updateBottomPanel(objData);

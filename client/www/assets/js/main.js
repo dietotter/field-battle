@@ -79,18 +79,21 @@ var players = {};
 
 var playerInTurn;
 
+// TODO should take players as parameters
 exports.initializeGame = function(){
 
     players.player1 = Player(0, 'Nick', 'human');
     players.player2 = Player(1, 'Kek', 'human');
 
-    changePlayerInTurn(players.player1);
     players.player1.addObject('houseHum', {id: 0, x: 0, y: 0});
     players.player2.addObject('houseHum', {id: 100, x: Constants.FIELD_WIDTH*9/10, y: 0});
 
     // FOR DEBUGGING
     players.player1.gameObjects[0].hp = 17;
 
+    ui.initialize();
+
+    changePlayerInTurn(players.player1);
     console.log(players);
 }
 
@@ -101,27 +104,6 @@ $('#ctx').click(function (e) {
     console.log(mousePos.x, mousePos.y);
 
     var selectedObj = getObjectByCoordinates(mousePos.x, mousePos.y);
-
-    // ================== DEBUG START ==================
-   /* if(!selectedObj){
-        ui.addButton({
-            panel: 'top',
-            name: 'test',
-            clickFunction: function () {
-                players.player1.addObject('archery', {id: 1, x: Constants.FIELD_WIDTH/10, y: Constants.FIELD_HEIGHT*2/10});
-            },
-            bottomText: 'Make archery for cool dude'
-        });
-
-        ui.addButton({
-            panel: 'bottom',
-            name: 'try',
-            clickFunction: function () {
-                players.player2.addObject('archery', {id: 101, x: Constants.FIELD_WIDTH*8/10, y: Constants.FIELD_HEIGHT*4/10});
-            }
-        });
-    }*/
-    // ================== DEBUG END ==================
 
     playerInTurn.clickHandle(selectedObj);
     if(selectedObj)
@@ -158,16 +140,41 @@ var getMousePos = function (e) {
     }
 }
 
+// make argument 'player' the new player-in-turn
 var changePlayerInTurn = function (player) {
     if(playerInTurn){
         playerInTurn.hasTurn = false;
+
+        // deselects selected object and cleans the UI
+        playerInTurn.endTurn();
     }
 
     player.hasTurn = true;
     playerInTurn = player;
 }
 
-// ?? in single player need to deselect selected object when player ends the turn (though this should not be the case in multiplayer)
+// check who's in turn and give the turn to the next player
+var changeTurn = function () {
+    var plArray = Object.values(players);
+
+    for(var i = 0; i < plArray.length; i++){
+        if(plArray[i] === playerInTurn){
+            if(++i >= plArray.length){
+                i = 0;
+            }
+
+            changePlayerInTurn(plArray[i]);
+        }
+    }
+}
+
+// return current player in turn
+getPlayerInTurn = function () {
+    return playerInTurn;
+}
+
+exports.getPlayerInTurn = getPlayerInTurn;
+exports.changeTurn = changeTurn;
 },{"./Constants":1,"./logic/Player":5,"./logic/factory":7,"./ui/battleUI":10}],4:[function(require,module,exports){
 var factory = require('./factory');
 var entityDrawer = require('./entityDrawer');
@@ -307,20 +314,14 @@ var build = function (self) {
     for(var obj in objList){
         objData.buttonDataList.push({
             panel: 'bottom',
-            name: objList[obj],
-            /*SHOULD BE CHANGED*/clickFunction: function(){
-                self.playerInControl.addObject(objList[obj], {id: ++counter, x: counter*Constants.FIELD_WIDTH/10, y: 0});
-            }
+            name: objList[obj]
         });
     }
 
     // add 'cancel' button
     objData.buttonDataList.push({
         panel: 'bottom',
-        name: 'cancel',
-        clickFunction: function(){
-            self.playerInControl.updateUI(1, self);
-        }
+        name: 'cancel'
     });
 
     ui.updateBottomPanel(objData);
@@ -386,7 +387,7 @@ var Player = function(id, name, race){
     // deselect currently selected object and return it if such exists
     self.deselectObject = function () {
         // set mode to default (no objects selected)
-        this.mode = ModeEnum.DEFAULT;
+        self.changeMode(ModeEnum.DEFAULT);
 
         var obj = self.selectedObject;
 
@@ -410,7 +411,7 @@ var Player = function(id, name, race){
             self.selectedObject = obj;
 
             // set mode to object selected
-            this.mode = ModeEnum.OBJECT_SELECTED;
+            self.changeMode(ModeEnum.OBJECT_SELECTED);
         }
     }
 
@@ -459,13 +460,15 @@ var Player = function(id, name, race){
                 break;
         }
 
-        self.updateUI(this.mode, this.selectedObject);
+        self.updateUI();
     }
 
 
     // here object portrait, stats, active abilities are retrieved and sent to battleUI class to update bottom interface panel
     // NO PORTRAIT AND STATS YET IMPLEMENTED (ONLY BUTTONS)
-    self.updateUI = function (mode, obj) {
+    self.updateUI = function () {
+        var mode = self.mode;
+        var obj = self.selectedObject;
         // when nothing is selected
         if(!obj || mode === ModeEnum.DEFAULT){
             // no buttons or portrait
@@ -489,10 +492,7 @@ var Player = function(id, name, race){
                     if(act !== 'attack')
                         objData.buttonDataList.push({
                             panel: 'bottom',
-                            name: act,
-                            clickFunction: function(){
-                                obj.actions[act](obj);
-                            }
+                            name: act
                         });
                 };
             }
@@ -505,15 +505,22 @@ var Player = function(id, name, race){
             // add 'cancel' button
             objData.buttonDataList.push({
                 panel: 'bottom',
-                name: 'cancel',
-                clickFunction: function(){
-                    self.updateUI(1, obj);
-                }
+                name: 'cancel'
             });
         }
 
         ui.updateBottomPanel(objData);
 
+    }
+
+    // when ending turn, deselect object (also sets mode to default and updates UI)
+    self.endTurn = function () {
+        self.deselectObject();
+    }
+
+    self.changeMode = function (mode) {
+        self.mode = mode;
+        self.updateUI();
     }
 
     return self;
@@ -712,14 +719,17 @@ exports.House = function (id, x, y, player) {
 var drawer = require('./drawer');
 var game = require('./game');
 
-game.initializeGame();
+// $(document).ready()
+$(function () {
+    game.initializeGame();
+    setInterval(update, 1000/25); // 25 frames per second => update every 40 ms
+})
 
 update = function(){
 
     drawer.drawGame();
 }
 
-setInterval(update, 1000/25); // 25 frames per second => update every 40 ms
 
 /* TODO Goals
 * DONE (9.7.2017) 1. Mouse interaction (player can select own units and structures)
@@ -730,7 +740,7 @@ setInterval(update, 1000/25); // 25 frames per second => update every 40 ms
 * DONE (15.7.2017) 4.7. When selecting ally (not own) unit/structure, don't show action buttons, but just unit's portrait and stats.
 *   This also applies to selecting enemy units/structures during Default player mode (when nothing own is selected).
 *   Also this should apply to all units/structures when its not Player's turn.
-* 5. Implement turns
+* DONE (16.7.2017) 5. Implement turns (+ add 'change turn' button to top panel)
 * 6. Implement object creation (without using the grid, player can create object wherever he wants on his side of the battlefield)
 * 7. Add game object property 'hasAction', which indicates whether or not object can act this turn (all of player's objects need
 *   to have this property reset to true at the start of the turn). Somewhat of hasAction indicator also needs to be added to UI.
@@ -738,6 +748,7 @@ setInterval(update, 1000/25); // 25 frames per second => update every 40 ms
 *   the mouse movement and
 * 9. Implement player's money system (constructing buildings and units using money, adding money every turn depending on the number of farms etc).
 *   Show current amount of each player's money on the top of the canvas.
+* 10. Add some game content (units, buildings, another race)
 *
 * TODO Not order-specifield goals:
 * DONE (15.7.2017) ???. Create github repo
@@ -746,13 +757,15 @@ setInterval(update, 1000/25); // 25 frames per second => update every 40 ms
 * ???. Show selected object's portrait and hp in bottom UI panel
 * ???. Change Player.js exports (module.exports = Player ===> exports.Player = Player; exports.ModeEnum = ModeEnum)
 * ???. Rework object selection and object selection drawing, as there may be multiple players, who will select the same object. (? this is for multiplayer)
+* ???. In buttonFunctions.js, make loadButtons function load buttons depending on players' races (e.g. if there is only human and orc players in the game, don't load other races' buttons)
+* ???. Add animations
 *
 * TODO Long-term goals
 * ???. Make game multiplayer (add back-end). Use socket.io
 *
 * TODO Problems
 * SOLVED (15.7.2017) 1. If enemy unit is selected, it can attack itself
-* 2. 'onclick' of UI buttons loads slowly (maybe should handle it in another way, not adding onclick every time we select an object.
+* SOLVED (16.7.2017) 2. 'onclick' of UI buttons loads slowly (maybe should handle it in another way, not adding onclick every time we select an object.
 *   E.g. We could append all onclicks when the page loads and never append it on selecting object (https://stackoverflow.com/questions/17664154/jquery-directly-at-onclick-and-effect-ui-slow))
 * */
 },{"./drawer":2,"./game":3}],10:[function(require,module,exports){
@@ -766,14 +779,14 @@ var BUTTON_BOTTOM_TEXT_TEMPLATE = '<p class="button-bottom-text">Useless button 
 var BOTTOM_BUTTON_PANEL = $('.bottom-button-panel');
 var TOP_BUTTON_PANEL = $('.top-button-panel');
 
+var buttonFunctions = require('./buttonFunctions');
 // add button to panel according to buttonData
 /*
 * buttonData is an object, containing such fields:
 * @ panel - what panel the button should be assigned to. Can take values 'top' or 'bottom';
 * @ name - button name. Will be displayed in the tooltip (?).
 *   Also, its lowercase variant will be in HTML id (e.g. name is 'Attack' => id is 'attackBtn') (?);
-* @ icon - image, which will be shown on button;
-* @ clickFunction - function, which will be performed on button click
+* @ icon - image, which will be shown on button; NOT IMPLEMENTED YET
 *
 * Optional fields:
 * @ bottomText - String, containing text which will be displayed below the button.
@@ -788,7 +801,6 @@ addButton = function(buttonData){
     button.prop('id', buttonData.name.toLowerCase() + 'Btn');
     button.text(buttonData.name); // this will be added to the tooltip instead
     button.attr('data-tooltip', buttonData.name);
-    button.click(buttonData.clickFunction);
 
     var node = $(BUTTON_BLOCK_TEMPLATE).append(button);
 
@@ -808,9 +820,14 @@ addButton = function(buttonData){
     }
 }
 
-// deletes current bottom buttons
+// deletes current bottom everything
 flushBottomPanel = function () {
     $(BOTTOM_BUTTON_PANEL.children()).remove();
+};
+
+// deletes current top everything
+flushTopPanel = function () {
+    $(TOP_BUTTON_PANEL.children()).remove();
 };
 
 // updates bottom panel according to incoming data
@@ -831,7 +848,62 @@ updateBottomPanel = function (objData) {
     }
 }
 
+updateTopPanel = function(){
+    flushTopPanel();
+    addButton({
+        panel: 'top',
+        name: 'Turn'
+    })
+}
+
+initialize = function () {
+    buttonFunctions.loadButtons();
+    updateTopPanel();
+}
+
 exports.flushBottomPanel = flushBottomPanel;
 exports.addButton = addButton;
 exports.updateBottomPanel = updateBottomPanel;
-},{}]},{},[9]);
+exports.initialize = initialize;
+},{"./buttonFunctions":11}],11:[function(require,module,exports){
+/**
+ * Created by Nikolay on 7/16/2017.
+ */
+var game = require('../game');
+var Constants = require('../Constants');
+
+/*DEBUG*/var counter = 0;
+
+getPlayer = function () {
+    return game.getPlayerInTurn();
+}
+
+getSelectedObject = function () {
+    return getPlayer().selectedObject;
+}
+
+loadButtons = function () {
+
+    $(document).on("click", "#cancelBtn", function () {
+        getPlayer().changeMode(1);
+    })
+
+    $(document).on("click", "#buildBtn", function () {
+        var obj = getSelectedObject();
+
+        obj.actions.build(obj);
+    })
+
+    $(document).on("click", "#archeryBtn", function (){
+        getPlayer().addObject('archery', {id: ++counter, x: counter*Constants.FIELD_WIDTH/10, y: 0});
+    })
+
+    $(document).on("click", "#turnBtn", function () {
+        game.changeTurn();
+    })
+
+    console.log("Button functions loaded");
+}
+
+exports.loadButtons = loadButtons;
+},{"../Constants":1,"../game":3}]},{},[9]);

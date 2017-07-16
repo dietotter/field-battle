@@ -32,7 +32,7 @@ var Player = function(id, name, race){
     // deselect currently selected object and return it if such exists
     self.deselectObject = function () {
         // set mode to default (no objects selected)
-        this.mode = ModeEnum.DEFAULT;
+        self.changeMode(ModeEnum.DEFAULT);
 
         var obj = self.selectedObject;
 
@@ -56,7 +56,7 @@ var Player = function(id, name, race){
             self.selectedObject = obj;
 
             // set mode to object selected
-            this.mode = ModeEnum.OBJECT_SELECTED;
+            self.changeMode(ModeEnum.OBJECT_SELECTED);
         }
     }
 
@@ -105,13 +105,15 @@ var Player = function(id, name, race){
                 break;
         }
 
-        self.updateUI(this.mode, this.selectedObject);
+        self.updateUI();
     }
 
 
     // here object portrait, stats, active abilities are retrieved and sent to battleUI class to update bottom interface panel
     // NO PORTRAIT AND STATS YET IMPLEMENTED (ONLY BUTTONS)
-    self.updateUI = function (mode, obj) {
+    self.updateUI = function () {
+        var mode = self.mode;
+        var obj = self.selectedObject;
         // when nothing is selected
         if(!obj || mode === ModeEnum.DEFAULT){
             // no buttons or portrait
@@ -135,10 +137,7 @@ var Player = function(id, name, race){
                     if(act !== 'attack')
                         objData.buttonDataList.push({
                             panel: 'bottom',
-                            name: act,
-                            clickFunction: function(){
-                                obj.actions[act](obj);
-                            }
+                            name: act
                         });
                 };
             }
@@ -151,15 +150,22 @@ var Player = function(id, name, race){
             // add 'cancel' button
             objData.buttonDataList.push({
                 panel: 'bottom',
-                name: 'cancel',
-                clickFunction: function(){
-                    self.updateUI(1, obj);
-                }
+                name: 'cancel'
             });
         }
 
         ui.updateBottomPanel(objData);
 
+    }
+
+    // when ending turn, deselect object (also sets mode to default and updates UI)
+    self.endTurn = function () {
+        self.deselectObject();
+    }
+
+    self.changeMode = function (mode) {
+        self.mode = mode;
+        self.updateUI();
     }
 
     return self;

@@ -8,14 +8,14 @@ var BUTTON_BOTTOM_TEXT_TEMPLATE = '<p class="button-bottom-text">Useless button 
 var BOTTOM_BUTTON_PANEL = $('.bottom-button-panel');
 var TOP_BUTTON_PANEL = $('.top-button-panel');
 
+var buttonFunctions = require('./buttonFunctions');
 // add button to panel according to buttonData
 /*
 * buttonData is an object, containing such fields:
 * @ panel - what panel the button should be assigned to. Can take values 'top' or 'bottom';
 * @ name - button name. Will be displayed in the tooltip (?).
 *   Also, its lowercase variant will be in HTML id (e.g. name is 'Attack' => id is 'attackBtn') (?);
-* @ icon - image, which will be shown on button;
-* @ clickFunction - function, which will be performed on button click
+* @ icon - image, which will be shown on button; NOT IMPLEMENTED YET
 *
 * Optional fields:
 * @ bottomText - String, containing text which will be displayed below the button.
@@ -30,7 +30,6 @@ addButton = function(buttonData){
     button.prop('id', buttonData.name.toLowerCase() + 'Btn');
     button.text(buttonData.name); // this will be added to the tooltip instead
     button.attr('data-tooltip', buttonData.name);
-    button.click(buttonData.clickFunction);
 
     var node = $(BUTTON_BLOCK_TEMPLATE).append(button);
 
@@ -50,9 +49,14 @@ addButton = function(buttonData){
     }
 }
 
-// deletes current bottom buttons
+// deletes current bottom everything
 flushBottomPanel = function () {
     $(BOTTOM_BUTTON_PANEL.children()).remove();
+};
+
+// deletes current top everything
+flushTopPanel = function () {
+    $(TOP_BUTTON_PANEL.children()).remove();
 };
 
 // updates bottom panel according to incoming data
@@ -73,6 +77,20 @@ updateBottomPanel = function (objData) {
     }
 }
 
+updateTopPanel = function(){
+    flushTopPanel();
+    addButton({
+        panel: 'top',
+        name: 'Turn'
+    })
+}
+
+initialize = function () {
+    buttonFunctions.loadButtons();
+    updateTopPanel();
+}
+
 exports.flushBottomPanel = flushBottomPanel;
 exports.addButton = addButton;
 exports.updateBottomPanel = updateBottomPanel;
+exports.initialize = initialize;
