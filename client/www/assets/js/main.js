@@ -41,6 +41,7 @@ var Player = require('./logic/Player');
 var game = require('./game');
 
 // draws grid, where units are to be placed
+// TODO instead, draw players' parts of the battlefield in different colours (better just stroke, but can also fill)
 var drawGrid = function(){
     for(var i = 0; i < 10; i++){
         for(var j = 0; j < 10; j++){
@@ -67,7 +68,7 @@ exports.drawGame = function(){
 
     drawGameObjects();
 };
-},{"./Constants":1,"./game":3,"./logic/Entity":4,"./logic/Player":5,"./logic/races/common":8}],3:[function(require,module,exports){
+},{"./Constants":1,"./game":3,"./logic/Entity":6,"./logic/Player":7,"./logic/races/common":10}],3:[function(require,module,exports){
 
 var Player = require('./logic/Player');
 var factory = require('./logic/factory');
@@ -76,17 +77,24 @@ var Constants = require('./Constants');
 var ui = require('./ui/battleUI');
 
 var players = {};
+var playersCount = 0;
 
 var playerInTurn;
 
-// TODO should take players as parameters
+// TODO should take players as parameters (OR add method 'addPlayerToBattlefield' or smth, where players count will also be increased)
 exports.initializeGame = function(){
 
     players.player1 = Player(0, 'Nick', 'human');
     players.player2 = Player(1, 'Kek', 'human');
+    playersCount++;
+    playersCount++;
 
-    players.player1.addObject('houseHum', {id: 0, x: 0, y: 0});
-    players.player2.addObject('houseHum', {id: 100, x: Constants.FIELD_WIDTH*9/10, y: 0});
+    for(var pl in players){
+        players[pl].initialize(playersCount);
+    }
+
+    // players.player1.addObject('houseHum', {id: 0, x: 0, y: 0});
+    // players.player2.addObject('houseHum', {id: 100, x: Constants.FIELD_WIDTH*9/10, y: 0});
 
     // FOR DEBUGGING
     players.player1.gameObjects[0].hp = 17;
@@ -105,7 +113,7 @@ $('#ctx').click(function (e) {
 
     var selectedObj = getObjectByCoordinates(mousePos.x, mousePos.y);
 
-    playerInTurn.clickHandle(selectedObj);
+    playerInTurn.clickHandle(mousePos.x, mousePos.y, selectedObj);
     if(selectedObj)
         console.log(selectedObj);
 });
@@ -173,9 +181,46 @@ getPlayerInTurn = function () {
     return playerInTurn;
 }
 
+getPlayersCount = function () {
+    return playersCount;
+}
+
 exports.getPlayerInTurn = getPlayerInTurn;
 exports.changeTurn = changeTurn;
-},{"./Constants":1,"./logic/Player":5,"./logic/factory":7,"./ui/battleUI":10}],4:[function(require,module,exports){
+exports.getPlayersCount = getPlayersCount;
+},{"./Constants":1,"./logic/Player":7,"./logic/factory":9,"./ui/battleUI":12}],4:[function(require,module,exports){
+/**
+ * Created by Nikolay on 7/19/2017.
+ */
+function Point(x, y) {
+    this.x = x;
+    this.y = y;
+}
+
+module.exports = Point;
+},{}],5:[function(require,module,exports){
+/**
+ * Created by Nikolay on 7/19/2017.
+ */
+var Point = require('./Point');
+
+function Rectangle(x, y, width, height) {
+    this.a = new Point(x, y);
+    this.b = new Point(x + width, y);
+    this.c = new Point(x + width, y + height);
+    this.d = new Point(x, y + height);
+    this.width = width;
+    this.height = height;
+    this.inBounds = function (w, h) {
+        if((w > this.a.x) && (w < this.b.x) && (h > this.a.y) && (h < this.d.y))
+            return true;
+
+        return false;
+    }
+}
+
+module.exports = Rectangle;
+},{"./Point":4}],6:[function(require,module,exports){
 var factory = require('./factory');
 var entityDrawer = require('./entityDrawer');
 var ui = require('../ui/battleUI');
@@ -352,10 +397,13 @@ var isNotFullHealth = function (self) {
 }
 
 exports.isNotFullHealth = isNotFullHealth;
-},{"../Constants":1,"../ui/battleUI":10,"./entityDrawer":6,"./factory":7}],5:[function(require,module,exports){
+},{"../Constants":1,"../ui/battleUI":12,"./entityDrawer":8,"./factory":9}],7:[function(require,module,exports){
 var factory = require('./factory');
 var ui = require('../ui/battleUI');
 var Constants = require('../Constants');
+
+var Point = require('../geometry/Point');
+var Rectangle = require('../geometry/Rectangle');
 
 var ModeEnum = {
     // nothing is selected
@@ -379,11 +427,41 @@ var Player = function(id, name, race){
         hasTurn: false,
         selectedObject: null,
         mode: ModeEnum.DEFAULT,
-        addObject: function (objectName, data) {
-            self.gameObjects.push(factory(objectName, {id: data.id, x: data.x, y: data.y, player: self}));
-        }
+        fieldPart: null, // Rectangle
+        objectBeingPlaced: null // String
     };
 
+    // ================ INITIALIZATION ================
+    self.initialize = function (playersCount) {
+        // Firstly, we set player's part of the field
+        self.setFieldPart(playersCount);
+        // get x of main building
+        var x = id % 2 === 0 ? self.fieldPart.a.x : self.fieldPart.b.x - Constants.Img.house.width;
+        // get y of main building
+        var y = self.fieldPart.a.y;
+        // Then, we add main building to the player
+        self.addObject('house' + race, {id: self.id*100, x: x, y: y});
+    }
+
+    // player's part of the battlefield depending on the amount of players and player's id
+    self.setFieldPart = function (playersCount) {
+        // get amount of players in the game
+        var plCount = playersCount;
+        // get by how much we should divide the field on Y axis
+        var divY = plCount/2;
+        // get whether you're on the right or the left side (left side id's are even, right - odd)
+        var x = id % 2;
+        // get how far down are you
+        var y = (id - x) / 2;
+        // horizontal part of the field
+        var hor = Constants.FIELD_WIDTH/2;
+        // vertical part of the field
+        var vert = Constants.FIELD_HEIGHT/divY;
+        // append field part to player
+        self.fieldPart = new Rectangle(x * hor, y * vert, hor, vert);
+    }
+
+    // ================ OBJECT HANDLING ================
     // deselect currently selected object and return it if such exists
     self.deselectObject = function () {
         // set mode to default (no objects selected)
@@ -415,6 +493,7 @@ var Player = function(id, name, race){
         }
     }
 
+    // ================ ACTIONS HANDLING ================
     self.attackHandle = function (obj) {
         var sObj = self.selectedObject;
         if(sObj.canAttack()){
@@ -431,7 +510,7 @@ var Player = function(id, name, race){
     }
 
     // handle mouse clicks on the battlefield
-    self.clickHandle = function (obj) {
+    self.clickHandle = function (x, y, obj) {
         switch(this.mode){
             // if nothing is selected
             case ModeEnum.DEFAULT:
@@ -451,8 +530,20 @@ var Player = function(id, name, race){
                 }
                 break;
 
-            // TODO
+            // when placing object onto the battlefield
             case ModeEnum.PLACING_OBJECT:
+                // get object image to know width and height of it
+                var objIm = Constants.Img[self.objectBeingPlaced];
+
+                // TODO need to implement id system
+                // if there is no object here and all the conditions are matched, place object and change mode to 'object selected'
+                if(!obj && self.canPlaceObject(x, y, objIm.width, objIm.height)){
+                    self.addObject(self.objectBeingPlaced, {id: 1234, x: x - objIm.width/2, y: y - objIm.height/2});
+                    self.changeMode(ModeEnum.OBJECT_SELECTED);
+                }
+                else{
+                    console.log('Can\'t place an object here'); // to UI log instead
+                }
                 break;
 
             // TODO
@@ -513,6 +604,7 @@ var Player = function(id, name, race){
 
     }
 
+    // ================ MODE AND TURN HANDLING ================
     // when ending turn, deselect object (also sets mode to default and updates UI)
     self.endTurn = function () {
         self.deselectObject();
@@ -523,11 +615,64 @@ var Player = function(id, name, race){
         self.updateUI();
     }
 
+    // ================ GAME OBJECT CREATION ================
+    // change mode to placing object
+    self.goToPlacingObject = function (objName) {
+        // TODO first of all, check whether there is enough money
+        self.objectBeingPlaced = objName;
+        self.changeMode(ModeEnum.PLACING_OBJECT);
+    }
+
+    self.canPlaceObject = function (x, y, width, height) {
+        // Firstly, we need to know if click fits player's part of the field
+        // mouse click is in the center of an object
+        // check bottom right and top left points of an object top fit
+        var brX = x + width/2;
+        var brY = y + height/2;
+        var tlX = x - width/2;
+        var tlY = y - height/2;
+        if(!self.fieldPart.inBounds(brX, brY) || !self.fieldPart.inBounds(tlX, tlY))
+            return false;
+
+        // check if object crosses other objects
+        if(getObjectByRectangle(new Rectangle(tlX, tlY, width, height)))
+            return false;
+
+        return true;
+    }
+
+    self.addObject = function (objectName, data) {
+        self.gameObjects.push(factory(objectName, {id: data.id, x: data.x, y: data.y, player: self}));
+    }
+
     return self;
 }
 
 module.exports = Player;
-},{"../Constants":1,"../ui/battleUI":10,"./factory":7}],6:[function(require,module,exports){
+
+var getObjectByRectangle = function (rect, gObjs) {
+
+    for(var found in gObjs){
+
+        var obj = gObjs[found];
+
+        var a = rect.a;
+        var b = rect.b;
+        var c = rect.c;
+        var d = rect.d;
+
+        // TODO need to change this to something more elegant
+        if(((a.x > obj.x) && (a.x < obj.x + obj.width) && (a.y > obj.y) && (a.y < obj.y + obj.height))
+            || ((b.x > obj.x) && (b.x < obj.x + obj.width) && (b.y > obj.y) && (b.y < obj.y + obj.height))
+            || ((c.x > obj.x) && (c.x < obj.x + obj.width) && (c.y > obj.y) && (c.y < obj.y + obj.height))
+            || ((d.x > obj.x) && (d.x < obj.x + obj.width) && (d.y > obj.y) && (d.y < obj.y + obj.height))){
+            return obj;
+        }
+    }
+
+    return null;
+}
+},{"../Constants":1,"../geometry/Point":4,"../geometry/Rectangle":5,"../ui/battleUI":12,"./factory":9}],8:[function(require,module,exports){
 var ctx = document.getElementById("ctx").getContext("2d");
 
 var drawObject = function (obj) {
@@ -624,7 +769,7 @@ function drawEllipse(ctx, x, y, w, h) {
     //ctx.closePath(); // not used correctly, see comments (use to close off open path)
     ctx.stroke();
 }
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var Entity = require('./Entity');
 var Constants = require('../Constants');
 var Img = Constants.Img;
@@ -653,7 +798,7 @@ module.exports = function (name, data) {
 
     switch(name){
         // common
-        case 'houseHum':
+        case 'househuman':
             objData.characteristics('house', Img.house, 18, 3, 1000);
 
             objData.actions['attack'] = Entity.attack;
@@ -663,7 +808,7 @@ module.exports = function (name, data) {
 
             return Entity.Structure(objData);
 
-        case 'houseOrc':
+        case 'houseorc':
             objData.characteristics('house', Img.house, 18, 3, 1000);
 
             objData.actions['attack'] = Entity.attack;
@@ -682,7 +827,7 @@ module.exports = function (name, data) {
             return Entity.Structure(objData);
     }
 };
-},{"../Constants":1,"./Entity":4}],8:[function(require,module,exports){
+},{"../Constants":1,"./Entity":6}],10:[function(require,module,exports){
 var Entity = require('../Entity');
 
 var IMAGE_DIR = '../www/assets/img/';
@@ -714,7 +859,7 @@ exports.House = function (id, x, y, player) {
 
     // TODO smhow implement House to be able to attack when not full hp (add 'attack' to actions list when hp < max hp and remove 'attack' from the list when hp = max hp)
 }
-},{"../Entity":4}],9:[function(require,module,exports){
+},{"../Entity":6}],11:[function(require,module,exports){
 
 var drawer = require('./drawer');
 var game = require('./game');
@@ -741,7 +886,7 @@ update = function(){
 *   This also applies to selecting enemy units/structures during Default player mode (when nothing own is selected).
 *   Also this should apply to all units/structures when its not Player's turn.
 * DONE (16.7.2017) 5. Implement turns (+ add 'change turn' button to top panel)
-* 6. Implement object creation (without using the grid, player can create object wherever he wants on his side of the battlefield)
+* IN PROGRESS (19.7.2017) 6. Implement object creation (without using the grid, player can create object wherever he wants on his side of the battlefield)
 * 7. Add game object property 'hasAction', which indicates whether or not object can act this turn (all of player's objects need
 *   to have this property reset to true at the start of the turn). Somewhat of hasAction indicator also needs to be added to UI.
 * 8. Implement scrolling the battlefield (player can press mouse/touch the screen and drag the camera) (HOW TO e.g. we can track
@@ -753,11 +898,14 @@ update = function(){
 * TODO Not order-specifield goals:
 * DONE (15.7.2017) ???. Create github repo
 * ???. Add an update method to entities and call it every frame --- This actually needs to be done soon (when the first necessity occurs)
+*   Also add 'update' to Player and call updateUI() in it (so that we don't need to call it every time we change smth. Also, we will need to keep the track
+*   of selected buttons, as sometimes UI is changed outside of Player class (e.g. from Entity.js))
 * ???. Finish player mode processing
 * ???. Show selected object's portrait and hp in bottom UI panel
 * ???. Change Player.js exports (module.exports = Player ===> exports.Player = Player; exports.ModeEnum = ModeEnum)
 * ???. Rework object selection and object selection drawing, as there may be multiple players, who will select the same object. (? this is for multiplayer)
 * ???. In buttonFunctions.js, make loadButtons function load buttons depending on players' races (e.g. if there is only human and orc players in the game, don't load other races' buttons)
+*   Also, in multiplayer may just load your race functions on client.
 * ???. Add animations
 *
 * TODO Long-term goals
@@ -767,8 +915,10 @@ update = function(){
 * SOLVED (15.7.2017) 1. If enemy unit is selected, it can attack itself
 * SOLVED (16.7.2017) 2. 'onclick' of UI buttons loads slowly (maybe should handle it in another way, not adding onclick every time we select an object.
 *   E.g. We could append all onclicks when the page loads and never append it on selecting object (https://stackoverflow.com/questions/17664154/jquery-directly-at-onclick-and-effect-ui-slow))
+*   3. During object creation, check for objects around is not working correctly (still creates object on another object (/screenshots/problem0.png))
+*
 * */
-},{"./drawer":2,"./game":3}],10:[function(require,module,exports){
+},{"./drawer":2,"./game":3}],12:[function(require,module,exports){
 /**
  * Created by Nikolay on 7/11/2017.
  */
@@ -865,7 +1015,7 @@ exports.flushBottomPanel = flushBottomPanel;
 exports.addButton = addButton;
 exports.updateBottomPanel = updateBottomPanel;
 exports.initialize = initialize;
-},{"./buttonFunctions":11}],11:[function(require,module,exports){
+},{"./buttonFunctions":13}],13:[function(require,module,exports){
 /**
  * Created by Nikolay on 7/16/2017.
  */
@@ -895,7 +1045,8 @@ loadButtons = function () {
     })
 
     $(document).on("click", "#archeryBtn", function (){
-        getPlayer().addObject('archery', {id: ++counter, x: counter*Constants.FIELD_WIDTH/10, y: 0});
+        getPlayer().objectBeingPlaced = 'archery';
+        getPlayer().changeMode(2);
     })
 
     $(document).on("click", "#turnBtn", function () {
@@ -906,4 +1057,4 @@ loadButtons = function () {
 }
 
 exports.loadButtons = loadButtons;
-},{"../Constants":1,"../game":3}]},{},[9]);
+},{"../Constants":1,"../game":3}]},{},[11]);

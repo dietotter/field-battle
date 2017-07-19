@@ -6,17 +6,24 @@ var Constants = require('./Constants');
 var ui = require('./ui/battleUI');
 
 var players = {};
+var playersCount = 0;
 
 var playerInTurn;
 
-// TODO should take players as parameters
+// TODO should take players as parameters (OR add method 'addPlayerToBattlefield' or smth, where players count will also be increased)
 exports.initializeGame = function(){
 
     players.player1 = Player(0, 'Nick', 'human');
     players.player2 = Player(1, 'Kek', 'human');
+    playersCount++;
+    playersCount++;
 
-    players.player1.addObject('houseHum', {id: 0, x: 0, y: 0});
-    players.player2.addObject('houseHum', {id: 100, x: Constants.FIELD_WIDTH*9/10, y: 0});
+    for(var pl in players){
+        players[pl].initialize(playersCount);
+    }
+
+    // players.player1.addObject('houseHum', {id: 0, x: 0, y: 0});
+    // players.player2.addObject('houseHum', {id: 100, x: Constants.FIELD_WIDTH*9/10, y: 0});
 
     // FOR DEBUGGING
     players.player1.gameObjects[0].hp = 17;
@@ -35,7 +42,7 @@ $('#ctx').click(function (e) {
 
     var selectedObj = getObjectByCoordinates(mousePos.x, mousePos.y);
 
-    playerInTurn.clickHandle(selectedObj);
+    playerInTurn.clickHandle(mousePos.x, mousePos.y, selectedObj);
     if(selectedObj)
         console.log(selectedObj);
 });
@@ -103,5 +110,10 @@ getPlayerInTurn = function () {
     return playerInTurn;
 }
 
+getPlayersCount = function () {
+    return playersCount;
+}
+
 exports.getPlayerInTurn = getPlayerInTurn;
 exports.changeTurn = changeTurn;
+exports.getPlayersCount = getPlayersCount;

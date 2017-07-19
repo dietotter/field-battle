@@ -27,7 +27,8 @@ loadButtons = function () {
     })
 
     $(document).on("click", "#archeryBtn", function (){
-        getPlayer().addObject('archery', {id: ++counter, x: counter*Constants.FIELD_WIDTH/10, y: 0});
+        getPlayer().objectBeingPlaced = 'archery';
+        getPlayer().changeMode(2);
     })
 
     $(document).on("click", "#turnBtn", function () {

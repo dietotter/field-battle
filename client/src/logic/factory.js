@@ -26,7 +26,7 @@ module.exports = function (name, data) {
 
     switch(name){
         // common
-        case 'houseHum':
+        case 'househuman':
             objData.characteristics('house', Img.house, 18, 3, 1000);
 
             objData.actions['attack'] = Entity.attack;
@@ -36,7 +36,7 @@ module.exports = function (name, data) {
 
             return Entity.Structure(objData);
 
-        case 'houseOrc':
+        case 'houseorc':
             objData.characteristics('house', Img.house, 18, 3, 1000);
 
             objData.actions['attack'] = Entity.attack;

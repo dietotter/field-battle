@@ -11,6 +11,7 @@ var Player = require('./logic/Player');
 var game = require('./game');
 
 // draws grid, where units are to be placed
+// TODO instead, draw players' parts of the battlefield in different colours (better just stroke, but can also fill)
 var drawGrid = function(){
     for(var i = 0; i < 10; i++){
         for(var j = 0; j < 10; j++){

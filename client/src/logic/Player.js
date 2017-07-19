@@ -2,6 +2,9 @@ var factory = require('./factory');
 var ui = require('../ui/battleUI');
 var Constants = require('../Constants');
 
+var Point = require('../geometry/Point');
+var Rectangle = require('../geometry/Rectangle');
+
 var ModeEnum = {
     // nothing is selected
     DEFAULT: 0,
@@ -24,11 +27,41 @@ var Player = function(id, name, race){
         hasTurn: false,
         selectedObject: null,
         mode: ModeEnum.DEFAULT,
-        addObject: function (objectName, data) {
-            self.gameObjects.push(factory(objectName, {id: data.id, x: data.x, y: data.y, player: self}));
-        }
+        fieldPart: null, // Rectangle
+        objectBeingPlaced: null // String
     };
 
+    // ================ INITIALIZATION ================
+    self.initialize = function (playersCount) {
+        // Firstly, we set player's part of the field
+        self.setFieldPart(playersCount);
+        // get x of main building
+        var x = id % 2 === 0 ? self.fieldPart.a.x : self.fieldPart.b.x - Constants.Img.house.width;
+        // get y of main building
+        var y = self.fieldPart.a.y;
+        // Then, we add main building to the player
+        self.addObject('house' + race, {id: self.id*100, x: x, y: y});
+    }
+
+    // player's part of the battlefield depending on the amount of players and player's id
+    self.setFieldPart = function (playersCount) {
+        // get amount of players in the game
+        var plCount = playersCount;
+        // get by how much we should divide the field on Y axis
+        var divY = plCount/2;
+        // get whether you're on the right or the left side (left side id's are even, right - odd)
+        var x = id % 2;
+        // get how far down are you
+        var y = (id - x) / 2;
+        // horizontal part of the field
+        var hor = Constants.FIELD_WIDTH/2;
+        // vertical part of the field
+        var vert = Constants.FIELD_HEIGHT/divY;
+        // append field part to player
+        self.fieldPart = new Rectangle(x * hor, y * vert, hor, vert);
+    }
+
+    // ================ OBJECT HANDLING ================
     // deselect currently selected object and return it if such exists
     self.deselectObject = function () {
         // set mode to default (no objects selected)
@@ -60,6 +93,7 @@ var Player = function(id, name, race){
         }
     }
 
+    // ================ ACTIONS HANDLING ================
     self.attackHandle = function (obj) {
         var sObj = self.selectedObject;
         if(sObj.canAttack()){
@@ -76,7 +110,7 @@ var Player = function(id, name, race){
     }
 
     // handle mouse clicks on the battlefield
-    self.clickHandle = function (obj) {
+    self.clickHandle = function (x, y, obj) {
         switch(this.mode){
             // if nothing is selected
             case ModeEnum.DEFAULT:
@@ -96,8 +130,20 @@ var Player = function(id, name, race){
                 }
                 break;
 
-            // TODO
+            // when placing object onto the battlefield
             case ModeEnum.PLACING_OBJECT:
+                // get object image to know width and height of it
+                var objIm = Constants.Img[self.objectBeingPlaced];
+
+                // TODO need to implement id system
+                // if there is no object here and all the conditions are matched, place object and change mode to 'object selected'
+                if(!obj && self.canPlaceObject(x, y, objIm.width, objIm.height)){
+                    self.addObject(self.objectBeingPlaced, {id: 1234, x: x - objIm.width/2, y: y - objIm.height/2});
+                    self.changeMode(ModeEnum.OBJECT_SELECTED);
+                }
+                else{
+                    console.log('Can\'t place an object here'); // to UI log instead
+                }
                 break;
 
             // TODO
@@ -158,6 +204,7 @@ var Player = function(id, name, race){
 
     }
 
+    // ================ MODE AND TURN HANDLING ================
     // when ending turn, deselect object (also sets mode to default and updates UI)
     self.endTurn = function () {
         self.deselectObject();
@@ -168,7 +215,60 @@ var Player = function(id, name, race){
         self.updateUI();
     }
 
+    // ================ GAME OBJECT CREATION ================
+    // change mode to placing object
+    self.goToPlacingObject = function (objName) {
+        // TODO first of all, check whether there is enough money
+        self.objectBeingPlaced = objName;
+        self.changeMode(ModeEnum.PLACING_OBJECT);
+    }
+
+    self.canPlaceObject = function (x, y, width, height) {
+        // Firstly, we need to know if click fits player's part of the field
+        // mouse click is in the center of an object
+        // check bottom right and top left points of an object top fit
+        var brX = x + width/2;
+        var brY = y + height/2;
+        var tlX = x - width/2;
+        var tlY = y - height/2;
+        if(!self.fieldPart.inBounds(brX, brY) || !self.fieldPart.inBounds(tlX, tlY))
+            return false;
+
+        // check if object crosses other objects
+        if(getObjectByRectangle(new Rectangle(tlX, tlY, width, height)))
+            return false;
+
+        return true;
+    }
+
+    self.addObject = function (objectName, data) {
+        self.gameObjects.push(factory(objectName, {id: data.id, x: data.x, y: data.y, player: self}));
+    }
+
     return self;
 }
 
 module.exports = Player;
+
+var getObjectByRectangle = function (rect, gObjs) {
+
+    for(var found in gObjs){
+
+        var obj = gObjs[found];
+
+        var a = rect.a;
+        var b = rect.b;
+        var c = rect.c;
+        var d = rect.d;
+
+        // TODO need to change this to something more elegant
+        if(((a.x > obj.x) && (a.x < obj.x + obj.width) && (a.y > obj.y) && (a.y < obj.y + obj.height))
+            || ((b.x > obj.x) && (b.x < obj.x + obj.width) && (b.y > obj.y) && (b.y < obj.y + obj.height))
+            || ((c.x > obj.x) && (c.x < obj.x + obj.width) && (c.y > obj.y) && (c.y < obj.y + obj.height))
+            || ((d.x > obj.x) && (d.x < obj.x + obj.width) && (d.y > obj.y) && (d.y < obj.y + obj.height))){
+            return obj;
+        }
+    }
+
+    return null;
+}
