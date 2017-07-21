@@ -2,7 +2,7 @@
  * Created by Nikolay on 7/11/2017.
  */
 var BUTTON_BLOCK_TEMPLATE = '<div class="button-block"></div>';
-var BUTTON_TEMPLATE = '<button id="uselessBtn">Btn</button>';
+var BUTTON_TEMPLATE = '<button class="single-button" id="uselessBtn">Btn</button>';
 var BUTTON_BOTTOM_TEXT_TEMPLATE = '<p class="button-bottom-text">Useless button name</p>';
 
 var BOTTOM_BUTTON_PANEL = $('.bottom-button-panel');

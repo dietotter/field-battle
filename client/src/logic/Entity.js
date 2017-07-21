@@ -36,6 +36,7 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
     self.playerInControl = player;
     self.actions = actions;
     self.conditions = conditions;
+    self.actionPoint = false;
 
     // take damage from an attacker
     self.takeDamage = function(attacker, isAtkInitial){
@@ -86,6 +87,21 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
         return false;
     };
 
+    // drop object's action points
+    self.dropAction = function(){
+        self.actionPoint = false;
+    }
+
+    // object can act again
+    self.restoreAction = function () {
+        self.actionPoint = true;
+    }
+
+    // check if object can act
+    self.hasAction = function () {
+        return self.actionPoint;
+    }
+
     return self;
 }
 
@@ -116,7 +132,7 @@ exports.Unit = function(objData){
 // =================== POSSIBLE ACTIONS ======================
 
 // create a unit or structure. data contains id, x, y of object being created
-// CURRENTLY NOT WORKING AND NOT USABLE
+// TODO CURRENTLY NOT WORKING AND NOT USABLE
 var createObject = function(unitName, data){
     return factory(unitName, data);
 }
@@ -129,8 +145,6 @@ var build = function (self) {
     };
 
     var objList = self.objectList;
-
-    /*SHOULD BE CHANGED*/var counter = 0;
 
     // add button data for all objects, existing in object list
     for(var obj in objList){
@@ -151,9 +165,16 @@ var build = function (self) {
 
 // attack an enemy unit and get attack v otvet, if enemy was not killed
 var attack = function(self, enemy) {
-    enemy.takeDamage(self, true); // where 1st parameter is the object, who is attacking,
-    // and 2nd parameter is boolean, which indicates if it was an initial attack (if false,
-    // then it means the attack was v otvet, and no more attacks v otvet should be dealt)
+    if(self.hasAction()){
+        enemy.takeDamage(self, true); // where 1st parameter is the object, who is attacking,
+        // and 2nd parameter is boolean, which indicates if it was an initial attack (if false,
+        // then it means the attack was v otvet, and no more attacks v otvet should be dealt)
+        self.dropAction();
+    }
+    else{
+        // TODO to UI log instead
+        console.log('Unit has already acted this turn')
+    }
 }
 
 exports.build = build;
@@ -174,3 +195,6 @@ var isNotFullHealth = function (self) {
 }
 
 exports.isNotFullHealth = isNotFullHealth;
+
+// ===================== OTHER =====================
+

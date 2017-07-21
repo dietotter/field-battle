@@ -2,6 +2,7 @@
 var Player = require('./logic/Player');
 var factory = require('./logic/factory');
 var Constants = require('./Constants');
+var drawer = require('./drawer');
 
 var ui = require('./ui/battleUI');
 
@@ -13,8 +14,8 @@ var playerInTurn;
 // TODO should take players as parameters (OR add method 'addPlayerToBattlefield' or smth, where players count will also be increased)
 exports.initializeGame = function(){
 
-    players.player1 = Player(0, 'Nick', 'human');
-    players.player2 = Player(1, 'Kek', 'human');
+    players.player1 = Player(0, 'Nick', 'human', '#12AA12');
+    players.player2 = Player(1, 'Kek', 'human', '#12C');
     playersCount++;
     playersCount++;
 
@@ -22,12 +23,10 @@ exports.initializeGame = function(){
         players[pl].initialize(playersCount);
     }
 
-    // players.player1.addObject('houseHum', {id: 0, x: 0, y: 0});
-    // players.player2.addObject('houseHum', {id: 100, x: Constants.FIELD_WIDTH*9/10, y: 0});
-
     // FOR DEBUGGING
     players.player1.gameObjects[0].hp = 17;
 
+    drawer.initialize(players);
     ui.initialize();
 
     changePlayerInTurn(players.player1);
@@ -87,6 +86,10 @@ var changePlayerInTurn = function (player) {
     }
 
     player.hasTurn = true;
+    // make all player's units/structures be able to act
+    for(var obj in player.gameObjects){
+        player.gameObjects[obj].restoreAction();
+    }
     playerInTurn = player;
 }
 

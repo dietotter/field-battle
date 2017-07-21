@@ -24,10 +24,11 @@ update = function(){
 *   This also applies to selecting enemy units/structures during Default player mode (when nothing own is selected).
 *   Also this should apply to all units/structures when its not Player's turn.
 * DONE (16.7.2017) 5. Implement turns (+ add 'change turn' button to top panel)
-* IN PROGRESS (19.7.2017) 6. Implement object creation (without using the grid, player can create object wherever he wants on his side of the battlefield)
-* 7. Add game object property 'hasAction', which indicates whether or not object can act this turn (all of player's objects need
+* DONE (21.7.2017) 6. Implement object creation (without using the grid, player can create object wherever he wants on his side of the battlefield)
+* DONE (21.7.2017) 6.1. Instead of grid, draw players' parts of the battlefield in different colours (better just stroke, but can also fill)
+* DONE (21.7.2017) 7. Add game object property 'hasAction', which indicates whether or not object can act this turn (all of player's objects need
 *   to have this property reset to true at the start of the turn). Somewhat of hasAction indicator also needs to be added to UI.
-* 8. Implement scrolling the battlefield (player can press mouse/touch the screen and drag the camera) (HOW TO e.g. we can track
+* POSTPONED (21.7.2017) 8. Implement scrolling the battlefield (player can press mouse/touch the screen and drag the camera) (HOW TO e.g. we can track
 *   the mouse movement and
 * 9. Implement player's money system (constructing buildings and units using money, adding money every turn depending on the number of farms etc).
 *   Show current amount of each player's money on the top of the canvas.
@@ -45,6 +46,7 @@ update = function(){
 * ???. In buttonFunctions.js, make loadButtons function load buttons depending on players' races (e.g. if there is only human and orc players in the game, don't load other races' buttons)
 *   Also, in multiplayer may just load your race functions on client.
 * ???. Add animations
+* IN PROGRESS (21.7.2017) ???. Draw and implement button icons
 *
 * TODO Long-term goals
 * ???. Make game multiplayer (add back-end). Use socket.io
@@ -53,6 +55,6 @@ update = function(){
 * SOLVED (15.7.2017) 1. If enemy unit is selected, it can attack itself
 * SOLVED (16.7.2017) 2. 'onclick' of UI buttons loads slowly (maybe should handle it in another way, not adding onclick every time we select an object.
 *   E.g. We could append all onclicks when the page loads and never append it on selecting object (https://stackoverflow.com/questions/17664154/jquery-directly-at-onclick-and-effect-ui-slow))
-*   3. During object creation, check for objects around is not working correctly (still creates object on another object (/screenshots/problem0.png))
+* SOLVED (21.7.2017) 3. During object creation, check for objects around is not working correctly (still creates object on another object (/screenshots/problem0.png))
 *
 * */

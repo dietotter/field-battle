@@ -27,8 +27,15 @@ loadButtons = function () {
     })
 
     $(document).on("click", "#archeryBtn", function (){
-        getPlayer().objectBeingPlaced = 'archery';
-        getPlayer().changeMode(2);
+        var obj = getSelectedObject();
+        if(obj.hasAction()){
+            getPlayer().objectBeingPlaced = 'archery';
+            getPlayer().changeMode(2);
+        }
+        else{
+            // TODO to UI log instead
+            console.log('Unit has already acted this turn')
+        }
     })
 
     $(document).on("click", "#turnBtn", function () {

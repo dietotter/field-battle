@@ -17,7 +17,7 @@ var ModeEnum = {
 
 }
 
-var Player = function(id, name, race){
+var Player = function(id, name, race, color){
     var self = {
         id: id,
         name: name,
@@ -28,7 +28,8 @@ var Player = function(id, name, race){
         selectedObject: null,
         mode: ModeEnum.DEFAULT,
         fieldPart: null, // Rectangle
-        objectBeingPlaced: null // String
+        objectBeingPlaced: null, // String
+        color: color || '#D00' // Player's color
     };
 
     // ================ INITIALIZATION ================
@@ -140,6 +141,7 @@ var Player = function(id, name, race){
                 if(!obj && self.canPlaceObject(x, y, objIm.width, objIm.height)){
                     self.addObject(self.objectBeingPlaced, {id: 1234, x: x - objIm.width/2, y: y - objIm.height/2});
                     self.changeMode(ModeEnum.OBJECT_SELECTED);
+                    self.selectedObject.dropAction();
                 }
                 else{
                     console.log('Can\'t place an object here'); // to UI log instead
@@ -235,7 +237,7 @@ var Player = function(id, name, race){
             return false;
 
         // check if object crosses other objects
-        if(getObjectByRectangle(new Rectangle(tlX, tlY, width, height)))
+        if(getObjectByRectangle(new Rectangle(tlX, tlY, width, height), self.gameObjects))
             return false;
 
         return true;
