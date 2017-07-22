@@ -38,9 +38,9 @@ var drawGold = function () {
 
         var y = Constants.FIELD_HEIGHT/20;
         var x = pl.id % 2 === 0 ? -1 * (pl.id / 2 + 1) : ((pl.id + 1) / 2);
-
         ctx.fillStyle = pl.color;
-        ctx.fillText(pl.gold, Constants.FIELD_WIDTH/2 + x * Constants.FIELD_WIDTH/25, y);
+        // Math.floor is to avoid too long numbers on canvas with float
+        ctx.fillText(Math.floor(pl.gold), Constants.FIELD_WIDTH/2 + x * Constants.FIELD_WIDTH/20, y);
     }
     ctx.restore();
 }

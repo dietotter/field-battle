@@ -25,6 +25,37 @@ goToBuildingPhase = function(objName){
     }
 }
 
+loadHuman = function () {
+
+    $(document).on("click", "#casernBtn", function (){
+        goToBuildingPhase('casern');
+    })
+
+    $(document).on("click", "#militiaBtn", function (){
+        goToBuildingPhase('militia');
+    })
+
+    $(document).on("click", "#swordsmanBtn", function (){
+        goToBuildingPhase('swordsman');
+    })
+
+    $(document).on("click", "#archeryBtn", function (){
+        goToBuildingPhase('archery');
+    })
+
+    $(document).on("click", "#archerBtn", function (){
+        goToBuildingPhase('archer');
+    })
+
+    $(document).on("click", "#royalarcherBtn", function (){
+        goToBuildingPhase('royalarcher');
+    })
+
+    $(document).on("click", "#sniperBtn", function (){
+        goToBuildingPhase('sniper');
+    })
+}
+
 loadButtons = function () {
 
     $(document).on("click", "#cancelBtn", function () {
@@ -37,13 +68,11 @@ loadButtons = function () {
         obj.actions.build(obj);
     })
 
-    $(document).on("click", "#archeryBtn", function (){
-        goToBuildingPhase('archery');
-    })
-
     $(document).on("click", "#turnBtn", function () {
         game.changeTurn();
     })
+
+    loadHuman();
 
     console.log("Button functions loaded");
 }

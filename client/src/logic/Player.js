@@ -220,13 +220,13 @@ var Player = function(id, name, race, color){
         self.hasTurn = true;
 
         var gObjs = self.gameObjects;
-        // make all player's units/structures be able to act and add money from farming structures
+        // make all player's units/structures be able to act and add money from farming structures (also activate other passive abilities)
         for(var o in gObjs){
             var obj = gObjs[o];
             obj.restoreAction();
 
-            if(obj.passiveAbilities.farmingStructure){
-                obj.passiveAbilities.farmingStructure(obj);
+            for(var abil in obj.passiveAbilities){
+                obj.passiveAbilities[abil](obj);
             }
         }
     }

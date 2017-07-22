@@ -33,7 +33,7 @@ module.exports = function (name, data) {
             objData.conditions['isNotFullHealth'] = Entity.isNotFullHealth;
             objData.passiveAbilities['farmingStructure'] = Entity.farmingStructure;
 
-            objData.objectList = {archery: 'archery'};
+            objData.objectList = {casern: 'casern', archery: 'archery'};
 
             return Entity.Structure(objData);
 
@@ -51,8 +51,51 @@ module.exports = function (name, data) {
         case 'archery':
             objData.characteristics(ObjectConstants.ARCHERY_CHAR);
 
-            objData.objectList = {};
+            objData.objectList = {archer: 'archer', royalArcher: 'royalArcher', sniper: 'sniper'};
 
             return Entity.Structure(objData);
+
+        case 'casern':
+            objData.characteristics(ObjectConstants.CASERN_CHAR);
+
+            objData.objectList = {militia: 'militia', swordsman: 'swordsman'};
+
+            return Entity.Structure(objData);
+
+        case 'militia':
+            objData.characteristics(ObjectConstants.MILITIA_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+
+            return Entity.Unit(objData);
+
+        case 'swordsman':
+            objData.characteristics(ObjectConstants.SWORDSMAN_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+
+            return Entity.Unit(objData);
+
+        case 'archer':
+            objData.characteristics(ObjectConstants.ARCHER_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+
+            return Entity.Unit(objData);
+
+        case 'royalarcher':
+            objData.characteristics(ObjectConstants.ROYALARCHER_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+            objData.passiveAbilities['actThreeTimes'] = Entity.actThreeTimes;
+
+            return Entity.Unit(objData);
+
+        case 'sniper':
+            objData.characteristics(ObjectConstants.SNIPER_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+
+            return Entity.Unit(objData);
     }
 };

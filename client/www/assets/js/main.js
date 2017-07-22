@@ -15,11 +15,23 @@ var IMAGE_DIR = '../www/assets/img/';
 var loadImages = function(){
     var Img = {
         house: new Image(),
-        archery: new Image()
+        archery: new Image(),
+        casern: new Image(),
+        militia: new Image(),
+        swordsman: new Image(),
+        archer: new Image(),
+        royalarcher: new Image(),
+        sniper: new Image()
     }
 
     Img.house.src = IMAGE_DIR + 'house.png';
     Img.archery.src = IMAGE_DIR + 'archery.png';
+    Img.casern.src = IMAGE_DIR + 'casern.png';
+    Img.militia.src = IMAGE_DIR + 'militia.png';
+    Img.swordsman.src = IMAGE_DIR + 'swordsman.png';
+    Img.archer.src = IMAGE_DIR + 'archer.png';
+    Img.royalarcher.src = IMAGE_DIR + 'royalArcher.png';
+    Img.sniper.src = IMAGE_DIR + 'sniper.png';
 
     return Img;
 }
@@ -68,9 +80,9 @@ var drawGold = function () {
 
         var y = Constants.FIELD_HEIGHT/20;
         var x = pl.id % 2 === 0 ? -1 * (pl.id / 2 + 1) : ((pl.id + 1) / 2);
-
         ctx.fillStyle = pl.color;
-        ctx.fillText(pl.gold, Constants.FIELD_WIDTH/2 + x * Constants.FIELD_WIDTH/25, y);
+        // Math.floor is to avoid too long numbers on canvas with float
+        ctx.fillText(Math.floor(pl.gold), Constants.FIELD_WIDTH/2 + x * Constants.FIELD_WIDTH/20, y);
     }
     ctx.restore();
 }
@@ -278,7 +290,7 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
     self.actions = actions;
     self.conditions = conditions;
     self.passiveAbilities = passiveAbilities;
-    self.actionPoint = false;
+    self.actionPoint = 0;
 
     // take damage from an attacker
     self.takeDamage = function(attacker, isAtkInitial){
@@ -292,7 +304,7 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
             self.destroySelf();
             return;
         }
-        if(isAtkInitial){
+        if(isAtkInitial && self.canAttack()){
             attacker.takeDamage(self, false);
         }
     };
@@ -335,12 +347,15 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
 
     // drop object's action points
     self.dropAction = function(){
-        self.actionPoint = false;
+        // if self was not destroyed, drop its action points
+        if(self){
+            self.actionPoint--;
+        }
     }
 
     // object can act again
     self.restoreAction = function () {
-        self.actionPoint = true;
+        self.actionPoint = 1;
     }
 
     // check if object can act
@@ -415,6 +430,8 @@ var attack = function(self, enemy) {
         enemy.takeDamage(self, true); // where 1st parameter is the object, who is attacking,
         // and 2nd parameter is boolean, which indicates if it was an initial attack (if false,
         // then it means the attack was v otvet, and no more attacks v otvet should be dealt)
+
+        // drop self action points
         self.dropAction();
     }
     else{
@@ -448,7 +465,12 @@ farmingStructure = function (self) {
     self.playerInControl.gold += 50;
 }
 
+actThreeTimes = function (self) {
+    self.actionPoint = 3;
+}
+
 exports.farmingStructure = farmingStructure;
+exports.actThreeTimes = actThreeTimes;
 },{"../Constants":1,"../ui/battleUI":12,"./entityDrawer":9,"./factory":10}],7:[function(require,module,exports){
 /**
  * Created by Nikolay on 7/22/2017.
@@ -468,18 +490,84 @@ HOUSE_CHAR = {
 ARCHERY_CHAR = {
     name: 'archery',
     image: Img.archery,
-    maxHp: 13,
+    maxHp: 12,
     attack: 0,
     cost: 250,
     description: 'Human archery. Allows to build such units: ***.'
 }
 
+CASERN_CHAR = {
+    name: 'casern',
+    image: Img.casern,
+    maxHp: 11,
+    attack: 0,
+    cost: 250,
+    description: 'Human casern. Allows to build such units: ***.'
+}
+
+MILITIA_CHAR = {
+    name: 'militia',
+    image: Img.militia,
+    maxHp: 2,
+    attack: 1,
+    cost: 75,
+    description: 'Human militia man. Attacks with a pitchfork'
+}
+
+SWORDSMAN_CHAR = {
+    name: 'swordsman',
+    image: Img.swordsman,
+    maxHp: 3,
+    attack: 2,
+    cost: 125,
+    description: 'Human swordsman. Soldier with ordinary attack and hp'
+}
+
+ARCHER_CHAR = {
+    name: 'archer',
+    image: Img.archer,
+    maxHp: 2,
+    attack: 2,
+    cost: 100,
+    description: 'Human archer. Weak hp and attack'
+}
+
+ROYALARCHER_CHAR = {
+    name: 'royalarcher',
+    image: Img.royalarcher,
+    maxHp: 3,
+    attack: 1,
+    cost: 150,
+    description: 'Royal archer. Can attack 3 times in one turn'
+}
+
+SNIPER_CHAR = {
+    name: 'sniper',
+    image: Img.sniper,
+    maxHp: 4,
+    attack: 6,
+    cost: 225,
+    description: 'Sniper with weak hp and strong attack'
+}
+
 exports.HOUSE_CHAR = HOUSE_CHAR;
 exports.ARCHERY_CHAR = ARCHERY_CHAR;
+exports.CASERN_CHAR = CASERN_CHAR;
+exports.MILITIA_CHAR = MILITIA_CHAR;
+exports.SWORDSMAN_CHAR = SWORDSMAN_CHAR;
+exports.ARCHER_CHAR = ARCHER_CHAR;
+exports.ROYALARCHER_CHAR = ROYALARCHER_CHAR;
+exports.SNIPER_CHAR = SNIPER_CHAR;
 
 exports.ALL_CHARACTERISTICS = {
     house: HOUSE_CHAR,
-    archery: ARCHERY_CHAR
+    archery: ARCHERY_CHAR,
+    casern: CASERN_CHAR,
+    militia: MILITIA_CHAR,
+    swordsman: SWORDSMAN_CHAR,
+    archer: ARCHER_CHAR,
+    royalarcher: ROYALARCHER_CHAR,
+    sniper: SNIPER_CHAR
 }
 },{"../Constants":1}],8:[function(require,module,exports){
 var factory = require('./factory');
@@ -704,13 +792,13 @@ var Player = function(id, name, race, color){
         self.hasTurn = true;
 
         var gObjs = self.gameObjects;
-        // make all player's units/structures be able to act and add money from farming structures
+        // make all player's units/structures be able to act and add money from farming structures (also activate other passive abilities)
         for(var o in gObjs){
             var obj = gObjs[o];
             obj.restoreAction();
 
-            if(obj.passiveAbilities.farmingStructure){
-                obj.passiveAbilities.farmingStructure(obj);
+            for(var abil in obj.passiveAbilities){
+                obj.passiveAbilities[abil](obj);
             }
         }
     }
@@ -920,7 +1008,7 @@ module.exports = function (name, data) {
             objData.conditions['isNotFullHealth'] = Entity.isNotFullHealth;
             objData.passiveAbilities['farmingStructure'] = Entity.farmingStructure;
 
-            objData.objectList = {archery: 'archery'};
+            objData.objectList = {casern: 'casern', archery: 'archery'};
 
             return Entity.Structure(objData);
 
@@ -938,9 +1026,52 @@ module.exports = function (name, data) {
         case 'archery':
             objData.characteristics(ObjectConstants.ARCHERY_CHAR);
 
-            objData.objectList = {};
+            objData.objectList = {archer: 'archer', royalArcher: 'royalArcher', sniper: 'sniper'};
 
             return Entity.Structure(objData);
+
+        case 'casern':
+            objData.characteristics(ObjectConstants.CASERN_CHAR);
+
+            objData.objectList = {militia: 'militia', swordsman: 'swordsman'};
+
+            return Entity.Structure(objData);
+
+        case 'militia':
+            objData.characteristics(ObjectConstants.MILITIA_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+
+            return Entity.Unit(objData);
+
+        case 'swordsman':
+            objData.characteristics(ObjectConstants.SWORDSMAN_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+
+            return Entity.Unit(objData);
+
+        case 'archer':
+            objData.characteristics(ObjectConstants.ARCHER_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+
+            return Entity.Unit(objData);
+
+        case 'royalarcher':
+            objData.characteristics(ObjectConstants.ROYALARCHER_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+            objData.passiveAbilities['actThreeTimes'] = Entity.actThreeTimes;
+
+            return Entity.Unit(objData);
+
+        case 'sniper':
+            objData.characteristics(ObjectConstants.SNIPER_CHAR);
+
+            objData.actions['attack'] = Entity.attack;
+
+            return Entity.Unit(objData);
     }
 };
 },{"./Entity":6,"./ObjectConstants":7}],11:[function(require,module,exports){
@@ -978,10 +1109,11 @@ update = function(){
 *   the mouse movement and
 * DONE (22.7.2017) 9. Implement player's money system (constructing buildings and units using money, adding money every turn depending on the number of farms etc).
 *   Show current amount of each player's money on the top of the canvas.
-* 10. Add some game content (units, buildings, another race)
+* DONE (22.7.2017) 10. Add some game content (units, buildings, another race)
 * 11. Add UI log on the bottom panel
 * 12. Add portrait and stats to unit selection
 * 13. Consider adding update method (read below)
+* 14. Add victory conditions
 *
 * TODO Not order-specifield goals:
 * DONE (15.7.2017) ???. Create github repo
@@ -1001,6 +1133,9 @@ update = function(){
 *
 * TODO Long-term goals
 * ???. Make game multiplayer (add back-end). Use socket.io
+* ???. Continue adding more game content
+* ???. Add simple AI
+* ???. Make monte-carlo simulation (this will help to balance the game) (can be done as soon as simple AI is added)
 *
 * TODO Problems
 * SOLVED (15.7.2017) 1. If enemy unit is selected, it can attack itself
@@ -1134,6 +1269,37 @@ goToBuildingPhase = function(objName){
     }
 }
 
+loadHuman = function () {
+
+    $(document).on("click", "#casernBtn", function (){
+        goToBuildingPhase('casern');
+    })
+
+    $(document).on("click", "#militiaBtn", function (){
+        goToBuildingPhase('militia');
+    })
+
+    $(document).on("click", "#swordsmanBtn", function (){
+        goToBuildingPhase('swordsman');
+    })
+
+    $(document).on("click", "#archeryBtn", function (){
+        goToBuildingPhase('archery');
+    })
+
+    $(document).on("click", "#archerBtn", function (){
+        goToBuildingPhase('archer');
+    })
+
+    $(document).on("click", "#royalarcherBtn", function (){
+        goToBuildingPhase('royalarcher');
+    })
+
+    $(document).on("click", "#sniperBtn", function (){
+        goToBuildingPhase('sniper');
+    })
+}
+
 loadButtons = function () {
 
     $(document).on("click", "#cancelBtn", function () {
@@ -1146,13 +1312,11 @@ loadButtons = function () {
         obj.actions.build(obj);
     })
 
-    $(document).on("click", "#archeryBtn", function (){
-        goToBuildingPhase('archery');
-    })
-
     $(document).on("click", "#turnBtn", function () {
         game.changeTurn();
     })
+
+    loadHuman();
 
     console.log("Button functions loaded");
 }

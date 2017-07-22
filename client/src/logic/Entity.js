@@ -37,7 +37,7 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
     self.actions = actions;
     self.conditions = conditions;
     self.passiveAbilities = passiveAbilities;
-    self.actionPoint = false;
+    self.actionPoint = 0;
 
     // take damage from an attacker
     self.takeDamage = function(attacker, isAtkInitial){
@@ -51,7 +51,7 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
             self.destroySelf();
             return;
         }
-        if(isAtkInitial){
+        if(isAtkInitial && self.canAttack()){
             attacker.takeDamage(self, false);
         }
     };
@@ -94,12 +94,15 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
 
     // drop object's action points
     self.dropAction = function(){
-        self.actionPoint = false;
+        // if self was not destroyed, drop its action points
+        if(self){
+            self.actionPoint--;
+        }
     }
 
     // object can act again
     self.restoreAction = function () {
-        self.actionPoint = true;
+        self.actionPoint = 1;
     }
 
     // check if object can act
@@ -174,6 +177,8 @@ var attack = function(self, enemy) {
         enemy.takeDamage(self, true); // where 1st parameter is the object, who is attacking,
         // and 2nd parameter is boolean, which indicates if it was an initial attack (if false,
         // then it means the attack was v otvet, and no more attacks v otvet should be dealt)
+
+        // drop self action points
         self.dropAction();
     }
     else{
@@ -207,4 +212,9 @@ farmingStructure = function (self) {
     self.playerInControl.gold += 50;
 }
 
+actThreeTimes = function (self) {
+    self.actionPoint = 3;
+}
+
 exports.farmingStructure = farmingStructure;
+exports.actThreeTimes = actThreeTimes;

@@ -32,10 +32,11 @@ update = function(){
 *   the mouse movement and
 * DONE (22.7.2017) 9. Implement player's money system (constructing buildings and units using money, adding money every turn depending on the number of farms etc).
 *   Show current amount of each player's money on the top of the canvas.
-* 10. Add some game content (units, buildings, another race)
+* DONE (22.7.2017) 10. Add some game content (units, buildings, another race)
 * 11. Add UI log on the bottom panel
 * 12. Add portrait and stats to unit selection
 * 13. Consider adding update method (read below)
+* 14. Add victory conditions
 *
 * TODO Not order-specifield goals:
 * DONE (15.7.2017) ???. Create github repo
@@ -55,6 +56,9 @@ update = function(){
 *
 * TODO Long-term goals
 * ???. Make game multiplayer (add back-end). Use socket.io
+* ???. Continue adding more game content
+* ???. Add simple AI
+* ???. Make monte-carlo simulation (this will help to balance the game) (can be done as soon as simple AI is added)
 *
 * TODO Problems
 * SOLVED (15.7.2017) 1. If enemy unit is selected, it can attack itself
