@@ -14,6 +14,17 @@ getSelectedObject = function () {
     return getPlayer().selectedObject;
 }
 
+goToBuildingPhase = function(objName){
+    var obj = getSelectedObject();
+    if(obj.hasAction()){
+        getPlayer().goToPlacingObject(objName);
+    }
+    else{
+        // TODO to UI log instead
+        console.log('Unit has already acted this turn')
+    }
+}
+
 loadButtons = function () {
 
     $(document).on("click", "#cancelBtn", function () {
@@ -27,15 +38,7 @@ loadButtons = function () {
     })
 
     $(document).on("click", "#archeryBtn", function (){
-        var obj = getSelectedObject();
-        if(obj.hasAction()){
-            getPlayer().objectBeingPlaced = 'archery';
-            getPlayer().changeMode(2);
-        }
-        else{
-            // TODO to UI log instead
-            console.log('Unit has already acted this turn')
-        }
+        goToBuildingPhase('archery');
     })
 
     $(document).on("click", "#turnBtn", function () {

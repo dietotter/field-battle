@@ -30,9 +30,12 @@ update = function(){
 *   to have this property reset to true at the start of the turn). Somewhat of hasAction indicator also needs to be added to UI.
 * POSTPONED (21.7.2017) 8. Implement scrolling the battlefield (player can press mouse/touch the screen and drag the camera) (HOW TO e.g. we can track
 *   the mouse movement and
-* 9. Implement player's money system (constructing buildings and units using money, adding money every turn depending on the number of farms etc).
+* DONE (22.7.2017) 9. Implement player's money system (constructing buildings and units using money, adding money every turn depending on the number of farms etc).
 *   Show current amount of each player's money on the top of the canvas.
 * 10. Add some game content (units, buildings, another race)
+* 11. Add UI log on the bottom panel
+* 12. Add portrait and stats to unit selection
+* 13. Consider adding update method (read below)
 *
 * TODO Not order-specifield goals:
 * DONE (15.7.2017) ???. Create github repo
@@ -47,6 +50,8 @@ update = function(){
 *   Also, in multiplayer may just load your race functions on client.
 * ???. Add animations
 * IN PROGRESS (21.7.2017) ???. Draw and implement button icons
+* ???. Add positive and harmful effects property(ies) to GameObject. They also should be able to have cooldowns
+*   Also maybe add properties 'bonusHP' or 'bonusAtk' and add their calculations to attack function or elsewhere
 *
 * TODO Long-term goals
 * ???. Make game multiplayer (add back-end). Use socket.io

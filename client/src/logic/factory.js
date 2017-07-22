@@ -1,6 +1,5 @@
 var Entity = require('./Entity');
-var Constants = require('../Constants');
-var Img = Constants.Img;
+var ObjectConstants = require('./ObjectConstants');
 
 module.exports = function (name, data) {
 
@@ -11,33 +10,35 @@ module.exports = function (name, data) {
         player: data.player,
         actions: {},
         conditions: {},
+        passiveAbilities: {},
 
         // We must call this function for the object to work properly
-        characteristics: function (name, image, maxHp, attack, cost) {
-            this.name = name;
-            this.image = image;
+        characteristics: function (data) {
+            this.name = data.name;
+            this.image = data.image;
             this.width = this.image.width;
             this.height = this.image.height;
-            this.maxHp = maxHp;
-            this.attack = attack;
-            this.cost = cost;
+            this.maxHp = data.maxHp;
+            this.attack = data.attack;
+            this.cost = data.cost;
         }
     }
 
     switch(name){
         // common
         case 'househuman':
-            objData.characteristics('house', Img.house, 18, 3, 1000);
+            objData.characteristics(ObjectConstants.HOUSE_CHAR);
 
             objData.actions['attack'] = Entity.attack;
             objData.conditions['isNotFullHealth'] = Entity.isNotFullHealth;
+            objData.passiveAbilities['farmingStructure'] = Entity.farmingStructure;
 
             objData.objectList = {archery: 'archery'};
 
             return Entity.Structure(objData);
 
         case 'houseorc':
-            objData.characteristics('house', Img.house, 18, 3, 1000);
+            objData.characteristics(ObjectConstants.HOUSE_CHAR);
 
             objData.actions['attack'] = Entity.attack;
             objData.conditions['isNotFullHealth'] = Entity.isNotFullHealth;
@@ -48,7 +49,7 @@ module.exports = function (name, data) {
 
         // human
         case 'archery':
-            objData.characteristics('archery', Img.archery, 18, 0, 1000);
+            objData.characteristics(ObjectConstants.ARCHERY_CHAR);
 
             objData.objectList = {};
 

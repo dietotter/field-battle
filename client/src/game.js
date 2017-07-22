@@ -79,17 +79,12 @@ var getMousePos = function (e) {
 // make argument 'player' the new player-in-turn
 var changePlayerInTurn = function (player) {
     if(playerInTurn){
-        playerInTurn.hasTurn = false;
-
-        // deselects selected object and cleans the UI
+        // deselects selected object, makes 'hasTurn' false and cleans the UI
         playerInTurn.endTurn();
     }
 
-    player.hasTurn = true;
-    // make all player's units/structures be able to act
-    for(var obj in player.gameObjects){
-        player.gameObjects[obj].restoreAction();
-    }
+    // makes 'hasTurn' true, restores all player's objects action points, adds money from farming structures
+    player.startTurn();
     playerInTurn = player;
 }
 

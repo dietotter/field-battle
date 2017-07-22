@@ -1,6 +1,7 @@
 var factory = require('./factory');
 var ui = require('../ui/battleUI');
 var Constants = require('../Constants');
+var ObjectConstants = require('./ObjectConstants')
 
 var Point = require('../geometry/Point');
 var Rectangle = require('../geometry/Rectangle');
@@ -23,7 +24,7 @@ var Player = function(id, name, race, color){
         name: name,
         race: race,
         gameObjects: [],
-        gold: 500,
+        gold: 1500,
         hasTurn: false,
         selectedObject: null,
         mode: ModeEnum.DEFAULT,
@@ -207,9 +208,27 @@ var Player = function(id, name, race, color){
     }
 
     // ================ MODE AND TURN HANDLING ================
-    // when ending turn, deselect object (also sets mode to default and updates UI)
+    // when ending turn, deselect object (also sets mode to default and updates UI) and set 'hasTurn' to false
     self.endTurn = function () {
+        self.hasTurn = false;
         self.deselectObject();
+    }
+
+    // when starting turn
+    self.startTurn = function () {
+        // 'hasTurn' => true
+        self.hasTurn = true;
+
+        var gObjs = self.gameObjects;
+        // make all player's units/structures be able to act and add money from farming structures
+        for(var o in gObjs){
+            var obj = gObjs[o];
+            obj.restoreAction();
+
+            if(obj.passiveAbilities.farmingStructure){
+                obj.passiveAbilities.farmingStructure(obj);
+            }
+        }
     }
 
     self.changeMode = function (mode) {
@@ -220,9 +239,16 @@ var Player = function(id, name, race, color){
     // ================ GAME OBJECT CREATION ================
     // change mode to placing object
     self.goToPlacingObject = function (objName) {
-        // TODO first of all, check whether there is enough money
-        self.objectBeingPlaced = objName;
-        self.changeMode(ModeEnum.PLACING_OBJECT);
+        var objCost = ObjectConstants.ALL_CHARACTERISTICS[objName].cost;
+        // first of all, check whether there is enough money
+        if(self.gold >= objCost){
+            // if yes, go to placing object phase
+            self.objectBeingPlaced = objName;
+            self.changeMode(ModeEnum.PLACING_OBJECT);
+        } else{
+            // TODO if not, print it to UI instead
+            console.log('You have not enough money to build ' + objName + '. Its cost is ' + objCost + 'g. You have ' + self.gold + ' g.');
+        }
     }
 
     self.canPlaceObject = function (x, y, width, height) {
@@ -243,8 +269,11 @@ var Player = function(id, name, race, color){
         return true;
     }
 
+    // add object to player's object list and substract the cost of object from player's gold
     self.addObject = function (objectName, data) {
-        self.gameObjects.push(factory(objectName, {id: data.id, x: data.x, y: data.y, player: self}));
+        var obj = factory(objectName, {id: data.id, x: data.x, y: data.y, player: self});
+        self.gameObjects.push(obj);
+        self.gold -= obj.cost;
     }
 
     return self;

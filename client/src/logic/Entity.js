@@ -24,7 +24,7 @@ var Entity = function(id, name, image, x, y, width, height){
 }
 
 // game object abstract constructor extends entity
-var GameObject = function(id, name, image, x, y, width, height, player, maxHp, attack, cost, actions, conditions){
+var GameObject = function(id, name, image, x, y, width, height, player, maxHp, attack, cost, actions, conditions, passiveAbilities){
     var self = Entity(id, name, image, x, y, width, height);
 
     self.isSelected = false;
@@ -36,13 +36,18 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
     self.playerInControl = player;
     self.actions = actions;
     self.conditions = conditions;
+    self.passiveAbilities = passiveAbilities;
     self.actionPoint = false;
 
     // take damage from an attacker
     self.takeDamage = function(attacker, isAtkInitial){
         self.hp -= attacker.attack;
 
+        // if this object was killed
         if(self.hp <= 0){
+            // give attacker gold equal to half of self cost
+            attacker.playerInControl.gold += self.cost/2;
+            // destroy this object
             self.destroySelf();
             return;
         }
@@ -107,7 +112,7 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
 
 // structure abstract constructor extends game object
 exports.Structure = function(objData){
-    var self = GameObject(objData.id, objData.name, objData.image, objData.x, objData.y, objData.width, objData.height, objData.player, objData.maxHp, objData.attack, objData.cost, objData.actions, objData.conditions);
+    var self = GameObject(objData.id, objData.name, objData.image, objData.x, objData.y, objData.width, objData.height, objData.player, objData.maxHp, objData.attack, objData.cost, objData.actions, objData.conditions, objData.passiveAbilities);
 
     self.type = 'structure';
 
@@ -121,7 +126,7 @@ exports.Structure = function(objData){
 
 // unit abstract constructor extends game object
 exports.Unit = function(objData){
-    var self = GameObject(objData.id, objData.name, objData.image, objData.x, objData.y, objData.width, objData.height, objData.player, objData.maxHp, objData.attack, objData.cost, objData.actions);
+    var self = GameObject(objData.id, objData.name, objData.image, objData.x, objData.y, objData.width, objData.height, objData.player, objData.maxHp, objData.attack, objData.cost, objData.actions, objData.conditions, objData.passiveAbilities);
 
     self.type = 'unit';
     self.actions.attack = attack;
@@ -196,5 +201,10 @@ var isNotFullHealth = function (self) {
 
 exports.isNotFullHealth = isNotFullHealth;
 
-// ===================== OTHER =====================
+// ===================== POSSIBLE PASSIVE ABILITIES =====================
 
+farmingStructure = function (self) {
+    self.playerInControl.gold += 50;
+}
+
+exports.farmingStructure = farmingStructure;

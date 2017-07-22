@@ -58,12 +58,31 @@ var drawGameObjects = function(){
     }
 }
 
+// draw players' gold
+// TODO thinking about drawing it on top panel instead
+var drawGold = function () {
+    ctx.save();
+    ctx.textAlign = 'center';
+    for(var player in players){
+        var pl = players[player];
+
+        var y = Constants.FIELD_HEIGHT/20;
+        var x = pl.id % 2 === 0 ? -1 * (pl.id / 2 + 1) : ((pl.id + 1) / 2);
+
+        ctx.fillStyle = pl.color;
+        ctx.fillText(pl.gold, Constants.FIELD_WIDTH/2 + x * Constants.FIELD_WIDTH/25, y);
+    }
+    ctx.restore();
+}
+
 exports.drawGame = function(){
     ctx.clearRect(0,0, Constants.CANVAS_WIDTH, Constants.CANVAS_HEIGHT);
 
     drawGrid();
 
     drawGameObjects();
+
+    drawGold();
 };
 
 exports.initialize = function (plrs) {
@@ -151,17 +170,12 @@ var getMousePos = function (e) {
 // make argument 'player' the new player-in-turn
 var changePlayerInTurn = function (player) {
     if(playerInTurn){
-        playerInTurn.hasTurn = false;
-
-        // deselects selected object and cleans the UI
+        // deselects selected object, makes 'hasTurn' false and cleans the UI
         playerInTurn.endTurn();
     }
 
-    player.hasTurn = true;
-    // make all player's units/structures be able to act
-    for(var obj in player.gameObjects){
-        player.gameObjects[obj].restoreAction();
-    }
+    // makes 'hasTurn' true, restores all player's objects action points, adds money from farming structures
+    player.startTurn();
     playerInTurn = player;
 }
 
@@ -192,7 +206,7 @@ getPlayersCount = function () {
 exports.getPlayerInTurn = getPlayerInTurn;
 exports.changeTurn = changeTurn;
 exports.getPlayersCount = getPlayersCount;
-},{"./Constants":1,"./drawer":2,"./logic/Player":7,"./logic/factory":9,"./ui/battleUI":11}],4:[function(require,module,exports){
+},{"./Constants":1,"./drawer":2,"./logic/Player":8,"./logic/factory":10,"./ui/battleUI":12}],4:[function(require,module,exports){
 /**
  * Created by Nikolay on 7/19/2017.
  */
@@ -251,7 +265,7 @@ var Entity = function(id, name, image, x, y, width, height){
 }
 
 // game object abstract constructor extends entity
-var GameObject = function(id, name, image, x, y, width, height, player, maxHp, attack, cost, actions, conditions){
+var GameObject = function(id, name, image, x, y, width, height, player, maxHp, attack, cost, actions, conditions, passiveAbilities){
     var self = Entity(id, name, image, x, y, width, height);
 
     self.isSelected = false;
@@ -263,13 +277,18 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
     self.playerInControl = player;
     self.actions = actions;
     self.conditions = conditions;
+    self.passiveAbilities = passiveAbilities;
     self.actionPoint = false;
 
     // take damage from an attacker
     self.takeDamage = function(attacker, isAtkInitial){
         self.hp -= attacker.attack;
 
+        // if this object was killed
         if(self.hp <= 0){
+            // give attacker gold equal to half of self cost
+            attacker.playerInControl.gold += self.cost/2;
+            // destroy this object
             self.destroySelf();
             return;
         }
@@ -334,7 +353,7 @@ var GameObject = function(id, name, image, x, y, width, height, player, maxHp, a
 
 // structure abstract constructor extends game object
 exports.Structure = function(objData){
-    var self = GameObject(objData.id, objData.name, objData.image, objData.x, objData.y, objData.width, objData.height, objData.player, objData.maxHp, objData.attack, objData.cost, objData.actions, objData.conditions);
+    var self = GameObject(objData.id, objData.name, objData.image, objData.x, objData.y, objData.width, objData.height, objData.player, objData.maxHp, objData.attack, objData.cost, objData.actions, objData.conditions, objData.passiveAbilities);
 
     self.type = 'structure';
 
@@ -348,7 +367,7 @@ exports.Structure = function(objData){
 
 // unit abstract constructor extends game object
 exports.Unit = function(objData){
-    var self = GameObject(objData.id, objData.name, objData.image, objData.x, objData.y, objData.width, objData.height, objData.player, objData.maxHp, objData.attack, objData.cost, objData.actions);
+    var self = GameObject(objData.id, objData.name, objData.image, objData.x, objData.y, objData.width, objData.height, objData.player, objData.maxHp, objData.attack, objData.cost, objData.actions, objData.conditions, objData.passiveAbilities);
 
     self.type = 'unit';
     self.actions.attack = attack;
@@ -423,13 +442,50 @@ var isNotFullHealth = function (self) {
 
 exports.isNotFullHealth = isNotFullHealth;
 
-// ===================== OTHER =====================
+// ===================== POSSIBLE PASSIVE ABILITIES =====================
 
+farmingStructure = function (self) {
+    self.playerInControl.gold += 50;
+}
 
-},{"../Constants":1,"../ui/battleUI":11,"./entityDrawer":8,"./factory":9}],7:[function(require,module,exports){
+exports.farmingStructure = farmingStructure;
+},{"../Constants":1,"../ui/battleUI":12,"./entityDrawer":9,"./factory":10}],7:[function(require,module,exports){
+/**
+ * Created by Nikolay on 7/22/2017.
+ */
+var Constants = require('../Constants');
+var Img = Constants.Img;
+
+HOUSE_CHAR = {
+    name: 'house',
+    image: Img.house,
+    maxHp: 18,
+    attack: 3,
+    cost: 1000,
+    description: 'Main building of a player. Allows to build structures of your race. Gives +50 gold to player each turn. Can attack only when not at full health.'
+}
+
+ARCHERY_CHAR = {
+    name: 'archery',
+    image: Img.archery,
+    maxHp: 13,
+    attack: 0,
+    cost: 250,
+    description: 'Human archery. Allows to build such units: ***.'
+}
+
+exports.HOUSE_CHAR = HOUSE_CHAR;
+exports.ARCHERY_CHAR = ARCHERY_CHAR;
+
+exports.ALL_CHARACTERISTICS = {
+    house: HOUSE_CHAR,
+    archery: ARCHERY_CHAR
+}
+},{"../Constants":1}],8:[function(require,module,exports){
 var factory = require('./factory');
 var ui = require('../ui/battleUI');
 var Constants = require('../Constants');
+var ObjectConstants = require('./ObjectConstants')
 
 var Point = require('../geometry/Point');
 var Rectangle = require('../geometry/Rectangle');
@@ -452,7 +508,7 @@ var Player = function(id, name, race, color){
         name: name,
         race: race,
         gameObjects: [],
-        gold: 500,
+        gold: 1500,
         hasTurn: false,
         selectedObject: null,
         mode: ModeEnum.DEFAULT,
@@ -636,9 +692,27 @@ var Player = function(id, name, race, color){
     }
 
     // ================ MODE AND TURN HANDLING ================
-    // when ending turn, deselect object (also sets mode to default and updates UI)
+    // when ending turn, deselect object (also sets mode to default and updates UI) and set 'hasTurn' to false
     self.endTurn = function () {
+        self.hasTurn = false;
         self.deselectObject();
+    }
+
+    // when starting turn
+    self.startTurn = function () {
+        // 'hasTurn' => true
+        self.hasTurn = true;
+
+        var gObjs = self.gameObjects;
+        // make all player's units/structures be able to act and add money from farming structures
+        for(var o in gObjs){
+            var obj = gObjs[o];
+            obj.restoreAction();
+
+            if(obj.passiveAbilities.farmingStructure){
+                obj.passiveAbilities.farmingStructure(obj);
+            }
+        }
     }
 
     self.changeMode = function (mode) {
@@ -649,9 +723,16 @@ var Player = function(id, name, race, color){
     // ================ GAME OBJECT CREATION ================
     // change mode to placing object
     self.goToPlacingObject = function (objName) {
-        // TODO first of all, check whether there is enough money
-        self.objectBeingPlaced = objName;
-        self.changeMode(ModeEnum.PLACING_OBJECT);
+        var objCost = ObjectConstants.ALL_CHARACTERISTICS[objName].cost;
+        // first of all, check whether there is enough money
+        if(self.gold >= objCost){
+            // if yes, go to placing object phase
+            self.objectBeingPlaced = objName;
+            self.changeMode(ModeEnum.PLACING_OBJECT);
+        } else{
+            // TODO if not, print it to UI instead
+            console.log('You have not enough money to build ' + objName + '. Its cost is ' + objCost + 'g. You have ' + self.gold + ' g.');
+        }
     }
 
     self.canPlaceObject = function (x, y, width, height) {
@@ -672,8 +753,11 @@ var Player = function(id, name, race, color){
         return true;
     }
 
+    // add object to player's object list and substract the cost of object from player's gold
     self.addObject = function (objectName, data) {
-        self.gameObjects.push(factory(objectName, {id: data.id, x: data.x, y: data.y, player: self}));
+        var obj = factory(objectName, {id: data.id, x: data.x, y: data.y, player: self});
+        self.gameObjects.push(obj);
+        self.gold -= obj.cost;
     }
 
     return self;
@@ -703,7 +787,7 @@ var getObjectByRectangle = function (rect, gObjs) {
 
     return null;
 }
-},{"../Constants":1,"../geometry/Point":4,"../geometry/Rectangle":5,"../ui/battleUI":11,"./factory":9}],8:[function(require,module,exports){
+},{"../Constants":1,"../geometry/Point":4,"../geometry/Rectangle":5,"../ui/battleUI":12,"./ObjectConstants":7,"./factory":10}],9:[function(require,module,exports){
 var ctx = document.getElementById("ctx").getContext("2d");
 
 var drawObject = function (obj) {
@@ -800,10 +884,9 @@ function drawEllipse(ctx, x, y, w, h) {
     //ctx.closePath(); // not used correctly, see comments (use to close off open path)
     ctx.stroke();
 }
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var Entity = require('./Entity');
-var Constants = require('../Constants');
-var Img = Constants.Img;
+var ObjectConstants = require('./ObjectConstants');
 
 module.exports = function (name, data) {
 
@@ -814,33 +897,35 @@ module.exports = function (name, data) {
         player: data.player,
         actions: {},
         conditions: {},
+        passiveAbilities: {},
 
         // We must call this function for the object to work properly
-        characteristics: function (name, image, maxHp, attack, cost) {
-            this.name = name;
-            this.image = image;
+        characteristics: function (data) {
+            this.name = data.name;
+            this.image = data.image;
             this.width = this.image.width;
             this.height = this.image.height;
-            this.maxHp = maxHp;
-            this.attack = attack;
-            this.cost = cost;
+            this.maxHp = data.maxHp;
+            this.attack = data.attack;
+            this.cost = data.cost;
         }
     }
 
     switch(name){
         // common
         case 'househuman':
-            objData.characteristics('house', Img.house, 18, 3, 1000);
+            objData.characteristics(ObjectConstants.HOUSE_CHAR);
 
             objData.actions['attack'] = Entity.attack;
             objData.conditions['isNotFullHealth'] = Entity.isNotFullHealth;
+            objData.passiveAbilities['farmingStructure'] = Entity.farmingStructure;
 
             objData.objectList = {archery: 'archery'};
 
             return Entity.Structure(objData);
 
         case 'houseorc':
-            objData.characteristics('house', Img.house, 18, 3, 1000);
+            objData.characteristics(ObjectConstants.HOUSE_CHAR);
 
             objData.actions['attack'] = Entity.attack;
             objData.conditions['isNotFullHealth'] = Entity.isNotFullHealth;
@@ -851,14 +936,14 @@ module.exports = function (name, data) {
 
         // human
         case 'archery':
-            objData.characteristics('archery', Img.archery, 18, 0, 1000);
+            objData.characteristics(ObjectConstants.ARCHERY_CHAR);
 
             objData.objectList = {};
 
             return Entity.Structure(objData);
     }
 };
-},{"../Constants":1,"./Entity":6}],10:[function(require,module,exports){
+},{"./Entity":6,"./ObjectConstants":7}],11:[function(require,module,exports){
 
 var drawer = require('./drawer');
 var game = require('./game');
@@ -891,9 +976,12 @@ update = function(){
 *   to have this property reset to true at the start of the turn). Somewhat of hasAction indicator also needs to be added to UI.
 * POSTPONED (21.7.2017) 8. Implement scrolling the battlefield (player can press mouse/touch the screen and drag the camera) (HOW TO e.g. we can track
 *   the mouse movement and
-* 9. Implement player's money system (constructing buildings and units using money, adding money every turn depending on the number of farms etc).
+* DONE (22.7.2017) 9. Implement player's money system (constructing buildings and units using money, adding money every turn depending on the number of farms etc).
 *   Show current amount of each player's money on the top of the canvas.
 * 10. Add some game content (units, buildings, another race)
+* 11. Add UI log on the bottom panel
+* 12. Add portrait and stats to unit selection
+* 13. Consider adding update method (read below)
 *
 * TODO Not order-specifield goals:
 * DONE (15.7.2017) ???. Create github repo
@@ -908,6 +996,8 @@ update = function(){
 *   Also, in multiplayer may just load your race functions on client.
 * ???. Add animations
 * IN PROGRESS (21.7.2017) ???. Draw and implement button icons
+* ???. Add positive and harmful effects property(ies) to GameObject. They also should be able to have cooldowns
+*   Also maybe add properties 'bonusHP' or 'bonusAtk' and add their calculations to attack function or elsewhere
 *
 * TODO Long-term goals
 * ???. Make game multiplayer (add back-end). Use socket.io
@@ -919,7 +1009,7 @@ update = function(){
 * SOLVED (21.7.2017) 3. During object creation, check for objects around is not working correctly (still creates object on another object (/screenshots/problem0.png))
 *
 * */
-},{"./drawer":2,"./game":3}],11:[function(require,module,exports){
+},{"./drawer":2,"./game":3}],12:[function(require,module,exports){
 /**
  * Created by Nikolay on 7/11/2017.
  */
@@ -1016,7 +1106,7 @@ exports.flushBottomPanel = flushBottomPanel;
 exports.addButton = addButton;
 exports.updateBottomPanel = updateBottomPanel;
 exports.initialize = initialize;
-},{"./buttonFunctions":12}],12:[function(require,module,exports){
+},{"./buttonFunctions":13}],13:[function(require,module,exports){
 /**
  * Created by Nikolay on 7/16/2017.
  */
@@ -1033,6 +1123,17 @@ getSelectedObject = function () {
     return getPlayer().selectedObject;
 }
 
+goToBuildingPhase = function(objName){
+    var obj = getSelectedObject();
+    if(obj.hasAction()){
+        getPlayer().goToPlacingObject(objName);
+    }
+    else{
+        // TODO to UI log instead
+        console.log('Unit has already acted this turn')
+    }
+}
+
 loadButtons = function () {
 
     $(document).on("click", "#cancelBtn", function () {
@@ -1046,15 +1147,7 @@ loadButtons = function () {
     })
 
     $(document).on("click", "#archeryBtn", function (){
-        var obj = getSelectedObject();
-        if(obj.hasAction()){
-            getPlayer().objectBeingPlaced = 'archery';
-            getPlayer().changeMode(2);
-        }
-        else{
-            // TODO to UI log instead
-            console.log('Unit has already acted this turn')
-        }
+        goToBuildingPhase('archery');
     })
 
     $(document).on("click", "#turnBtn", function () {
@@ -1065,4 +1158,4 @@ loadButtons = function () {
 }
 
 exports.loadButtons = loadButtons;
-},{"../Constants":1,"../game":3}]},{},[10]);
+},{"../Constants":1,"../game":3}]},{},[11]);
